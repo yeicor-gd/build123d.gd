@@ -1,0 +1,509 @@
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - renovate/*
+    tags:
+      - v*
+  pull_request:
+    branches:
+      - main
+  merge_group:
+jobs:
+  read-versions:
+    runs-on: ubuntu-24.04
+    outputs:
+      em_version: ${{ steps.read-versions.outputs.em_version }}
+      mingw_version: ${{ steps.read-versions.outputs.mingw_version }}
+      ndk_version: ${{ steps.read-versions.outputs.ndk_version }}
+      godot_min_version_tag: ${{ steps.godot.outputs.godot_min_version_tag }}
+      godot_versions: ${{ steps.godot.outputs.godot_versions }}
+      godot_max_version: ${{ steps.godot.outputs.godot_max_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - id: read-versions
+        name: Read version defaults from godot-cpp's action.yml
+        shell: bash
+        run: |
+          set -e
+          EM_VERSION=$(grep -A1 'em-version:' godot-cpp/.github/actions/setup-godot-cpp/action.yml | grep 'default:' | sed 's/.*default: //' | tr -d ' ')
+          MINGW_VERSION=$(grep -A1 'mingw-version:' godot-cpp/.github/actions/setup-godot-cpp/action.yml | grep 'default:' | sed 's/.*default: //' | tr -d ' ')
+          NDK_VERSION=$(grep -A1 'ndk-version:' godot-cpp/.github/actions/setup-godot-cpp/action.yml | grep 'default:' | sed 's/.*default: //' | tr -d ' ')
+          echo "em_version=$EM_VERSION" >> $GITHUB_OUTPUT
+          echo "mingw_version=$MINGW_VERSION" >> $GITHUB_OUTPUT
+          echo "ndk_version=$NDK_VERSION" >> $GITHUB_OUTPUT
+
+      - id: godot
+        name: Read minimum Godot version
+        shell: bash
+        run: |
+          set -e
+          COMPAT_MIN=$(grep 'compatibility_minimum' demo/addons/*/gdext.gdextension | sed 's/.*= "\(.*\)"/\1/')
+          SUPPORTED_VERSIONS_JSON=$(grep '^supported_api_versions' godot-cpp/tools/godotcpp.py | sed 's/.*= //' | head -n 1)
+          if ! echo "$SUPPORTED_VERSIONS_JSON" | grep -q "\"$COMPAT_MIN\""; then
+            echo "Error: Your" demo/addons/*/gdext.gdextension "(compatibility_minimum=$COMPAT_MIN) is not in godot-cpp/tools/godotcpp.py (supported_api_versions=$SUPPORTED_VERSIONS_JSON). Please update it."
+            exit 1
+          fi
+          # Grab patch versions for compatibility with chickensoft-games/setup-godot@v2
+          VERSIONS=$(echo "$SUPPORTED_VERSIONS_JSON" | jq -r '.[]')
+          FULL_VERSIONS=()
+          for version in $VERSIONS; do
+            if [[ "$(printf '%s\n' "$version" "$COMPAT_MIN" | sort -V | head -n1)" == "$COMPAT_MIN" ]]; then
+              LATEST=$(curl -s https://api.github.com/repos/godotengine/godot/releases | jq -r ".[] | select(.tag_name | startswith(\"$version.\")) | .tag_name" | sort -V | tail -1)
+              if [ -z "$LATEST" ]; then
+                echo "Warning: No release found for $version, assuming .0 patch version"
+                FULL_VERSIONS+=("$version.0-stable")
+              else
+                FULL_VERSIONS+=("$LATEST")
+              fi
+            fi
+          done
+          GODOT_VERSIONS_JSON=$(printf '%s\n' "${FULL_VERSIONS[@]}" | jq -R -s -c 'split("\n") | map(select(. != ""))')
+          GODOT_MAX_VERSION=${FULL_VERSIONS[${#FULL_VERSIONS[@]}-1]}
+          echo "godot_min_version_tag=$COMPAT_MIN-stable" >> $GITHUB_OUTPUT
+          echo "godot_versions=$GODOT_VERSIONS_JSON" >> $GITHUB_OUTPUT
+          echo "godot_max_version=$GODOT_MAX_VERSION" >> $GITHUB_OUTPUT
+
+  prepare-api:
+    needs: read-versions
+    strategy:
+      matrix:
+        float-precision: [single, double]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Cache Godot API dump
+        id: cache
+        uses: actions/cache@v5
+        with:
+          path: godot-cpp/gdextension/extension_api.json
+          key: godot-api-dump-${{ needs.read-versions.outputs.godot_min_version_tag }}-${{ matrix.float-precision }}
+          enableCrossOsArchive: true
+
+      - name: Dump Godot extension API for godot-cpp
+        if: steps.cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -e
+          echo "Minimum Godot version: ${{ needs.read-versions.outputs.godot_min_version_tag }}"
+          # Clone Godot repo at the minimum version branch
+          git clone --depth 1 --branch ${{ needs.read-versions.outputs.godot_min_version_tag }} https://github.com/godotengine/godot.git godot-repo
+          cd godot-repo
+          # Build Godot with appropriate precision
+          python -m pip install scons
+          scons ${{ matrix.float-precision == 'double' && 'precision=double' || '' }}
+          # Move back and use built Godot to dump APIs
+          cd ..
+          ./godot-repo/bin/godot.* --dump-extension-api --headless
+          rm -rf godot-repo
+          mv extension_api.json godot-cpp/gdextension/
+
+      - name: Upload Godot API dump
+        uses: actions/upload-artifact@v7
+        with:
+          name: godot-api-${{ matrix.float-precision }}
+          path: godot-cpp/gdextension/extension_api.json
+
+  build:
+    needs: [prepare-api, read-versions]
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [
+            # https://docs.godotengine.org/en/stable/about/system_requirements.html
+            { vcpkg_triplet: x64-linux, os: ubuntu-24.04 },
+            { vcpkg_triplet: x86-linux, os: ubuntu-24.04 },
+            { vcpkg_triplet: arm64-linux, os: ubuntu-24.04-arm },
+            { vcpkg_triplet: arm-linux, os: ubuntu-24.04-arm },
+            { vcpkg_triplet: x64-mingw-static, os: windows-2025 },
+            { vcpkg_triplet: x86-mingw-static, os: windows-2025 },
+            { vcpkg_triplet: arm64-mingw-static, os: windows-2025 },
+            { vcpkg_triplet: x64-windows-static, os: windows-2025 }, # MSVC instead of mingw
+            { vcpkg_triplet: x86-windows-static, os: windows-2025 }, # MSVC instead of mingw
+            { vcpkg_triplet: arm64-windows-static, os: windows-2025 }, # MSVC instead of mingw
+            { vcpkg_triplet: arm64-osx, os: macos-15 },
+            { vcpkg_triplet: x64-osx, os: macos-15 },
+            { vcpkg_triplet: wasm32-emscripten, os: ubuntu-24.04, threads: off },
+            { vcpkg_triplet: wasm32-emscripten, os: ubuntu-24.04, threads: on },
+            { vcpkg_triplet: x64-android, os: ubuntu-24.04 },
+            { vcpkg_triplet: x86-android, os: ubuntu-24.04 },
+            { vcpkg_triplet: arm64-android, os: ubuntu-24.04 },
+            { vcpkg_triplet: arm-neon-android, os: ubuntu-24.04 },
+            { vcpkg_triplet: arm64-ios, os: macos-15 },
+          ]
+        # Note: vcpkg forces building both Debug and Release on a single run. This is not the same as the templates!
+        target-type: [template_debug, template_release]
+        float-precision: [single, double]
+    runs-on: ${{ matrix.target.os }}
+    permissions:
+      actions: write
+    steps:
+      - name: Free disk space (Ubuntu)
+        if: matrix.target.os == 'ubuntu-24.04' || matrix.target.os == 'ubuntu-24.04-arm'
+        shell: bash
+        run: |
+          set -e
+          sudo rm -rf /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo docker image prune --all --force
+          sudo docker builder prune -a
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Download Godot API dump
+        uses: actions/download-artifact@v8
+        with:
+          name: godot-api-${{ matrix.float-precision }}
+          path: godot-cpp/gdextension/
+
+      - name: Setup for x86 Linux
+        if: matrix.target.vcpkg_triplet == 'x86-linux'
+        shell: bash
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y gcc-multilib g++-multilib
+
+      - name: Setup for ARM Linux
+        if: matrix.target.vcpkg_triplet == 'arm-linux'
+        shell: bash
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-linux-gnueabihf g++-arm-linux-gnueabihf
+
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.target.os == 'ubuntu-24.04' || matrix.target.os == 'ubuntu-24.04-arm'
+        shell: bash
+        run: |
+          set -e
+          arch_selector=""
+          if [ "${{ matrix.target.vcpkg_triplet }}" == "x86-linux" ]; then
+            arch_selector=":i386"
+            sudo dpkg --add-architecture i386
+          elif [ "${{ matrix.target.vcpkg_triplet }}" == "arm-linux" ]; then
+            arch_selector=":armhf"
+            sudo dpkg --add-architecture armhf
+          fi
+          sudo apt-get update
+          sudo apt-get install -y "libx11-dev${arch_selector}" "libgl1-mesa-dev${arch_selector}" "libfontconfig-dev${arch_selector}"
+
+      - name: Setup MinGW (Windows) # MSVC is already set up by default
+        if: matrix.target.os == 'windows-2025' && contains(matrix.target.vcpkg_triplet, '-mingw')
+        uses: egor-tensin/setup-mingw@v3
+        with:
+          version: ${{ needs.read-versions.outputs.mingw_version }}
+
+      - name: Install build tools (macOS)
+        if: matrix.target.os == 'macos-15'
+        shell: bash
+        run: |
+          set -e
+          brew install autoconf automake autoconf-archive
+
+      - name: Setup Emscripten
+        if: contains(matrix.target.vcpkg_triplet, 'wasm32-emscripten')
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: ${{ needs.read-versions.outputs.em_version }}
+
+      - name: Configure Emscripten CMake args
+        if: contains(matrix.target.vcpkg_triplet, 'wasm32-emscripten')
+        shell: bash
+        run: |
+          set -e
+          echo "gdext_cmake_args=-DGODOTCPP_THREADS=${{ matrix.target.threads }} ${{ env.gdext_cmake_args }}" >> $GITHUB_ENV
+
+      - name: Setup Android NDK
+        if: contains(matrix.target.vcpkg_triplet, '-android')
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: ${{ needs.read-versions.outputs.ndk_version }}
+
+      - &set_android_ndk_path
+        name: Set Android NDK path
+        if: contains(matrix.target.vcpkg_triplet, '-android')
+        shell: bash
+        run: |
+          set -e
+          echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
+
+      - name: Prepare sccache for caching compiler outputs
+        uses: mozilla-actions/sccache-action@v0.0.9
+        with:
+          disable_annotations: true
+
+      - name: Configure sccache
+        shell: bash
+        run: |
+          set -e
+          echo "SCCACHE_CACHE_SIZE=2G" | tee -a $GITHUB_ENV
+          SCCACHE_DIR=$(sccache --show-stats | grep 'Local disk:' | sed 's/.*: //' | tr -d '"')
+          echo "SCCACHE_DIR=$(echo "$SCCACHE_DIR" | sed -E 's#^([A-Z]):#/\L\1#; s#\\#/#g')" | tee -a $GITHUB_ENV
+
+      - name: Build with vcpkg
+        shell: bash
+        run: |
+          set -e
+          "vcpkg/bootstrap-vcpkg${{ matrix.target.os == 'windows-2025' && '.bat' || '.sh' }}"
+          echo "-DGODOTCPP_TARGET=${{ matrix.target-type }} -DGODOTCPP_PRECISION=${{ matrix.float-precision }} ${{ env.gdext_cmake_args }}" > __GDEXT_CMAKE_ARGS
+          vcpkg_exe="vcpkg/vcpkg${{ matrix.target.os == 'windows-2025' && '.exe' || '' }}"
+          # Force rebuild relying on ccache, as vcpkg's cache is sometimes too aggressive (designed for external deps)
+          $vcpkg_exe remove $($vcpkg_exe list | awk '{print $1}' | sed 's/\[[^]]*\]//g' | tr '\n' ' ') || true
+          $vcpkg_exe install gdext
+        env:
+          VCPKG_DISABLE_METRICS: 1
+          VCPKG_DEFAULT_TRIPLET: ${{ matrix.target.vcpkg_triplet }}
+          VCPKG_OVERLAY_TRIPLETS: vcpkg_triplets
+          VCPKG_OVERLAY_PORTS: vcpkg_ports
+          GDEXT_CMAKE_ARGS: -DGODOTCPP_TARGET=${{ matrix.target-type }} -DGODOTCPP_PRECISION=${{ matrix.float-precision }} ${{ env.gdext_cmake_args }}
+
+      - name: Show sccache stats
+        shell: bash
+        run: |
+          set -e
+          sccache --show-stats
+
+      - name: Copy to addon folder
+        shell: bash
+        run: |
+          set -e
+          files=$(find vcpkg/buildtrees/gdext -name "*.so" -o -name "*.dll" -o -name "*.pdb" -o -name "*.dylib")
+          if [ -z "$files" ]; then
+            echo "No library files found"
+            exit 1
+          fi
+          echo -e "Copying the following files to the addon folder...\n$files"
+          cp -f $files demo/addons/*/
+
+      - name: Upload addon artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: gdext-${{ matrix.target.vcpkg_triplet }}-${{ matrix.target-type }}-${{ matrix.float-precision }}-${{ matrix.target.threads || '' }}
+          path: |
+            demo/addons/*/*
+            .fake-path-to-force-root-directory
+
+      - name: Upload vcpkg installed artifact
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: vcpkg-installed-${{ matrix.target.vcpkg_triplet }}-${{ matrix.target-type }}-${{ matrix.float-precision }}-${{ matrix.target.threads || '' }}
+          path: | # /tmp/ forces consistant root directory to /
+            vcpkg/installed/
+            ${{ env.SCCACHE_DIR }}
+            /.fake-path-to-force-root-directory
+
+      - name: Upload vcpkg buildtrees artifact
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: vcpkg-buildtrees-packages-${{ matrix.target.vcpkg_triplet }}-${{ matrix.target-type }}-${{ matrix.float-precision }}-${{ matrix.target.threads || '' }}
+          path: | # /tmp/ forces consistant root directory to /
+            vcpkg/buildtrees/
+            vcpkg/packages/
+            vcpkg/downloads/
+            /.fake-path-to-force-root-directory
+      # </Cache save and export artifacts>
+
+  test:
+    needs: [read-versions, build]
+    strategy:
+      fail-fast: false
+      matrix:
+        target: # Not all architectures are exported (this is just a demo)
+          [
+            { os: ubuntu-24.04, export_name: Linux },
+            { os: ubuntu-24.04, export_name: Web },
+            { os: ubuntu-24.04, export_name: Android },
+            { os: windows-2025, export_name: "Windows Desktop" },
+            { os: macos-15, export_name: macOS },
+            { os: ubuntu-24.04, export_name: iOS }, # I do not have a developer account (which is required to actually build the app on macos), instead use ubuntu and just export the code to compile.
+          ]
+        mode: [debug, release]
+        godot-version: ${{ fromJson(needs.read-versions.outputs.godot_versions) }}
+    runs-on: ${{ matrix.target.os }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Download addon artifacts
+        uses: actions/download-artifact@v8
+        with:
+          pattern: gdext-*
+          merge-multiple: true
+
+      - name: Setup Android NDK # Different if than before and merge entries not supported by github actions :(
+        if: matrix.target.export_name == 'Android'
+        id: setup-ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: ${{ needs.read-versions.outputs.ndk_version }}
+
+      - *set_android_ndk_path
+
+      - name: Setup Android keystore
+        if: matrix.target.export_name == 'Android' && matrix.mode == 'release'
+        shell: bash
+        run: |
+          set -e
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk
+          keytool -genkeypair -v -storetype PKCS12 -keystore ${{ github.workspace }}/demo/android_keystore.p12 -alias androidkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=Unknown, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown, C=Unknown"
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=${{ github.workspace }}/demo/android_keystore.p12" >> $GITHUB_ENV
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=androidkey" >> $GITHUB_ENV
+          echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=android" >> $GITHUB_ENV
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: ${{ matrix.godot-version }}
+          use-dotnet: false
+          include-templates: true
+          cache: false  # Bypassing cache for this simple download to ensure the API dump and other sources stays cached.
+
+      - name: Run Godot editor to import all resources
+        shell: bash
+        run: |
+          set -e
+          godot --path demo --editor --quit --headless || true
+
+      - name: Run demo test
+        shell: bash
+        if: matrix.target.export_name == 'Linux' || matrix.target.export_name == 'Windows Desktop' || matrix.target.export_name == 'macOS'
+        run: |
+          set -e
+          godot --path demo --quit --headless | tee output.log
+          grep -q "Demo finished successfully" output.log
+
+      - name: Export demo
+        if: matrix.godot-version == needs.read-versions.outputs.godot_max_version
+        shell: bash
+        run: |
+          set -e
+          mkdir demo/exports
+          godot --export-${{ matrix.mode }} "${{ matrix.target.export_name }}" --path demo --headless
+          echo "EXPORT_NAME=$(echo "${{ matrix.target.export_name }}" | tr '[:upper:]' '[:lower:]' | tr -d ' /')" >> $GITHUB_ENV
+
+      - name: Upload demo export artifact
+        if: matrix.godot-version == needs.read-versions.outputs.godot_max_version
+        uses: actions/upload-artifact@v7
+        with:
+          name: demo-export-${{ env.EXPORT_NAME }}-${{ matrix.mode }}
+          path: demo/exports/**
+
+      - name: Prepare addon export
+        if: matrix.target.export_name == 'Linux' && matrix.mode == 'release' && matrix.godot-version == needs.read-versions.outputs.godot_max_version
+        shell: bash
+        run: |
+          set -e
+          mkdir -p addon-export
+          cp -r demo/addons addon-export/
+          cp LICENSE addon-export/addons/*
+          MODIFIED_REF=$(echo ${{ github.ref_name }} | sed 's/\//-/g')
+          echo "MODIFIED_REF=$MODIFIED_REF" >> $GITHUB_ENV
+
+      - name: Upload addon artifact
+        if: matrix.target.export_name == 'Linux' && matrix.mode == 'release' && matrix.godot-version == needs.read-versions.outputs.godot_max_version
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ github.event.repository.name }}-${{ env.MODIFIED_REF }}-addon
+          path: addon-export
+
+  release:
+    runs-on: ubuntu-24.04
+    needs: test
+    if: github.ref_type == 'tag'
+    permissions:
+      contents: write
+    steps:
+      - name: Download addon artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: ${{ github.event.repository.name }}-${{ github.ref_name }}-addon
+          path: .
+
+      - name: Recreate addon zip
+        shell: bash
+        run: |
+          set -e
+          zip -r "${{ github.event.repository.name }}-${{ github.ref_name }}-addon.zip" addons
+
+      - name: Upload to release
+        shell: bash
+        run: |
+          set -e
+          gh auth status
+          gh release upload ${{ github.ref_name }} "${{ github.event.repository.name }}-${{ github.ref_name }}-addon.zip"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+
+  deploy-pages:
+    runs-on: ubuntu-24.04
+    needs: test
+    if: github.ref_type == 'tag'
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download web demo artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: demo-export-web-release
+          path: web
+
+      - name: Upload pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: web
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
+
+  # Certain jobs may fail due to rate limits or compiler bugs; automatically retry failed jobs up to 3 times with some delay
+  retry-on-failure:
+    needs:
+      - read-versions
+      - prepare-api
+      - build
+      - test
+      - release
+      - deploy-pages
+    if: always() && contains(needs.*.result, 'failure') && fromJSON(github.run_attempt) < 5
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -ex
+          sleep $((RANDOM % 30 + 1))m
+          gh workflow run retry-workflow.yml -F run_id=${{ github.run_id }}
+
+  success: # No-op success job for github ruleset detection
+    runs-on: ubuntu-24.04
+    needs: retry-on-failure
+    steps:
+      - name: CI success marker
+        run: echo "CI completed successfully (no-op success job for github ruleset detection)"
