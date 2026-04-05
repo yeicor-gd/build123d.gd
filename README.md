@@ -1,15 +1,13 @@
-# SQLite3.gd
+# OpenCASCADE.gd
 
-This project provides SQLite3 integration for the Godot Engine using GDExtension.
+This project provides OpenCASCADE Technology (OCCT) integration for the Godot Engine using GDExtension.
 
-It focuses on being a low-level yet complete wrapper, designed as a solid foundation for building higher-level interfaces while still accounting for rare edge cases.
-
-All standard SQLite extensions are included except for Unicode (ICU) support. ICU is excluded to avoid increasing the final build size by more than 10×, but it can still be loaded separately at runtime if needed.
+It focuses on being a low-level yet complete wrapper, designed as a solid foundation for building higher-level CAD/CAM/CAE functionality while still accounting for rare edge cases.
 
 ## ✨ Features
 
-- **Cross-Platform Support**: Runs on desktop (Windows, macOS, Linux), mobile (Android, iOS), and web (HTML5) platforms.
-- **Demo Project**: includes [demo scene](demo/) to get you started quickly, with a [web version](https://github.com/yeicor-gd/sqlite3.gd/demo/) available.
+- **Cross-Platform Support**: Runs on desktop (Windows, macOS, Linux) platforms.
+- **Demo Project**: includes [demo scene](demo/) to get you started quickly.
 - **Comprehensive Documentation**: includes [class references](doc_classes/) for seamless Godot editor integration.
 - **High Performance**: leverages C++ for optimized performance and low-level access.
 - **Easy Integration**: drop-in [GDExtension](https://docs.godotengine.org/en/stable/tutorials/scripting/gdextension/index.html) with simple Godot API bindings.

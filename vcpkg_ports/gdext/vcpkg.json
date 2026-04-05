@@ -3,23 +3,10 @@
   "version": "0.0.1",
   "dependencies": [
     {
-      "name": "sqlite3",
+      "name": "opencascade",
       "features": [
-        "dbpage-vtab",
-        "dbstat",
-        "fts3",
-        "fts4",
-        "fts5",
-        "geopoly",
-        "json1",
-        "limit",
-        "math",
-        "memsys3",
-        "memsys5",
-        "rtree",
-        "session",
-        "snapshot",
-        "soundex"
+	"freetype",
+	"rapidjson"
       ]
     }
   ]

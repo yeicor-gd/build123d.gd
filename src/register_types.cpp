@@ -3,18 +3,23 @@
 #include <godot_cpp/godot.hpp>
 #include <godot_cpp/core/defs.hpp>
 
-#include "autowrapper/module.h"
 #include "gdextension_interface.h"
+#include "OpenCascadeVersion.h"
 
 using namespace godot;
 
 namespace {
     void gdext_initialize_module(ModuleInitializationLevel p_level) {
-        gdext_initialize_module_auto(p_level);
+        if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+            return;
+        }
+        
+        // Register OpenCASCADE wrapper classes
+        GDREGISTER_CLASS(OpenCascadeVersion);
     }
 
     void gdext_uninitialize_module(ModuleInitializationLevel p_level) {
-        gdext_uninitialize_module_auto(p_level);
+        (void)p_level;
         // Teardown logic (if any) goes here.
     }
 }

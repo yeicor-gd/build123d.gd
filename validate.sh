@@ -107,6 +107,7 @@ if [ ! -f "$GODOT_BIN" ]; then
         fi
         exit 1
     fi
+    mkdir -p "$(dirname $GODOT_BIN)"
     mv "$GODOT_SOURCE_DIR/bin/godot.linuxbsd.editor.dev.x86_64.san" "$GODOT_BIN"
 fi
 
