@@ -146,6 +146,7 @@ jobs:
     runs-on: ${{ matrix.target.os }}
     permissions:
       actions: write
+      contents: read
     steps:
       - name: Free disk space (Ubuntu)
         if: matrix.target.os == 'ubuntu-24.04' || matrix.target.os == 'ubuntu-24.04-arm'
