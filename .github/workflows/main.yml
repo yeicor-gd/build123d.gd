@@ -198,7 +198,7 @@ jobs:
             sudo dpkg --add-architecture armhf
           fi
           sudo apt-get update
-          sudo apt-get install -y "libx11-dev${arch_selector}" "libgl1-mesa-dev${arch_selector}" "libfontconfig-dev${arch_selector}"
+          sudo apt-get install -y "libx11-dev${arch_selector}" "libgl1-mesa-dev${arch_selector}" "libfontconfig-dev${arch_selector}" "autoconf${arch_selector}" "autoconf-archive${arch_selector}" "automake${arch_selector}" "libtool${arch_selector}"
 
       - name: Setup MinGW (Windows) # MSVC is already set up by default
         if: matrix.target.os == 'windows-2025' && contains(matrix.target.vcpkg_triplet, '-mingw')
@@ -211,7 +211,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          brew install autoconf automake autoconf-archive
+          brew install autoconf autoconf-archive automake libtool
 
       - name: Setup Emscripten
         if: contains(matrix.target.vcpkg_triplet, 'wasm32-emscripten')
