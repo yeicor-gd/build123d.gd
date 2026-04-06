@@ -40,15 +40,15 @@ if [ $BUILD_EXIT -ne 0 ]; then
     if [ -n "$ERROR_FILE" ]; then
         {
             echo "=== Build Failed ==="
-            echo ""
-            echo "Build log errors:"
-            grep -E "error:|Error|undefined reference|cannot find" "$BUILD_LOG" || true
-            echo ""
-            echo "Attached log files:"
-            find "$SCRIPT_DIR/vcpkg/buildtrees" -name "*.log" -type f 2>/dev/null | while read log_file; do
-                echo ""
-                echo "--- $log_file ---"
-                grep -E "error:|Error|undefined reference|cannot find" "$log_file" || true
+            #echo ""
+            #echo "Build log errors:"
+            grep -E "error:" "$BUILD_LOG" || true
+            #echo ""
+            #echo "Attached log files:"
+            find "$SCRIPT_DIR/vcpkg/buildtrees/gdext" -name "*.log" -type f 2>/dev/null | while read log_file; do
+                #echo ""
+                #echo "--- $log_file ---"
+                grep -E "error:" "$log_file" || true
             done
         } > "$ERROR_FILE"
     fi
