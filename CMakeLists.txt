@@ -115,10 +115,10 @@ else()
   add_library(${PROJECT_NAME} SHARED ${SOURCES} ${DOC_GEN_FILE})
 endif()
 target_include_directories(${PROJECT_NAME} PRIVATE ${OpenCASCADE_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE godot-cpp ${OpenCASCADE_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE godot-cpp "$<LINK_GROUP:RESCAN,${OpenCASCADE_LIBRARIES}>")
 
 # Maximum warnings and treat them as errors
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE godot-cpp/include ${OpenCASCADE_INCLUDE_DIRS}) # Don't warn about godot-cpp headers since we don't control them
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE godot-cpp/include ${OpenCASCADE_INCLUDE_DIRS}) # Don't warn about 3rd party headers since we don't control them
 if(MSVC)
   set(WARN_FLAGS "/W4")
   if(ENABLE_WERROR)
