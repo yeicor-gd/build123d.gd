@@ -82,7 +82,7 @@ set(GODOTCPP_DISABLE_EXCEPTIONS OFF)
 add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/godot-cpp")
 
 # Dependencies
-find_package(OpenCASCADE CONFIG REQUIRED)  # OpenCASCADE Technology
+find_package(OpenCASCADE REQUIRED)  # OpenCASCADE Technology
 
 # Define the documentation sources (the godot-cpp cmake version does not
 # work?)
@@ -111,15 +111,14 @@ file(GLOB_RECURSE SOURCES "src/*.cpp" "src/**/*.cpp")
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   add_library(${PROJECT_NAME} MODULE ${SOURCES} ${DOC_GEN_FILE})
   target_link_options(${PROJECT_NAME} PRIVATE "-sSIDE_MODULE=1")
+  target_link_libraries(${PROJECT_NAME} PRIVATE "-Wl,--allow-multiple-definition") # Emscripten's linker is more strict about multiple definitions, but OpenCASCADE has some circular dependencies that cause this. This flag allows it to link successfully.
 else()
   add_library(${PROJECT_NAME} SHARED ${SOURCES} ${DOC_GEN_FILE})
 endif()
-target_include_directories(${PROJECT_NAME} PRIVATE ${OpenCASCADE_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE godot-cpp "$<LINK_GROUP:RESCAN,${OpenCASCADE_LIBRARIES}>")
+target_link_libraries(${PROJECT_NAME} PRIVATE godot-cpp ${OpenCASCADE_LIBRARIES})
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE godot-cpp/include ${OpenCASCADE_INCLUDE_DIR})
 
-# Maximum warnings and treat them as errors
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE godot-cpp/include ${OpenCASCADE_INCLUDE_DIRS}) # Don't warn about 3rd party headers since we don't control them
-if(MSVC)
+if(MSVC) # Maximum warnings and treat them as errors
   set(WARN_FLAGS "/W4")
   if(ENABLE_WERROR)
     list(APPEND WARN_FLAGS "/WX")
