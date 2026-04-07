@@ -70,7 +70,6 @@ if [ ! -d "$GODOT_SOURCE_DIR" ]; then
     curl -fsSL "https://github.com/godotengine/godot/archive/refs/tags/$GODOT_VERSION.zip" -o godot.zip
     unzip -qo godot.zip
     rm godot.zip
-    mv godot-$GODOT_VERSION "$GODOT_SOURCE_DIR"
     cd "$SCRIPT_DIR"
 fi
 
