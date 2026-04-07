@@ -381,19 +381,11 @@ jobs:
           include-templates: true
           cache: false # Bypassing cache for this simple download to ensure the API dump and other sources stays cached.
 
-      - name: Run Godot editor to import all resources
-        shell: bash
-        run: |
-          set -e
-          godot --path demo --editor --quit --headless || true
-
       - name: Run demo test
         shell: bash
         if: matrix.target.export_name == 'Linux' || matrix.target.export_name == 'Windows Desktop' || matrix.target.export_name == 'macOS'
         run: |
-          set -e
-          godot --path demo --quit --headless | tee output.log
-          grep -q "Demo finished successfully" output.log
+          DO_BUILD=false GODOT_VERSION="${{ matrix.godot-version }}" ./validate.sh /tmp/a.txt || ( echo "====== ERRORS ======" && cat /tmp/a.txt && exit 1 )
 
       - name: Export demo
         if: matrix.godot-version == needs.read-versions.outputs.godot_max_version
