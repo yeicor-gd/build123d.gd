@@ -4,24 +4,24 @@
 #include <godot_cpp/core/defs.hpp>
 
 #include "gdextension_interface.h"
+
+// Include headers for all detected classes
 #include "OpenCascadeVersion.h"
 
 using namespace godot;
 
-namespace {
-    void gdext_initialize_module(ModuleInitializationLevel p_level) {
-        if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
-            return;
-        }
-        
-        // Register OpenCASCADE wrapper classes
-        GDREGISTER_CLASS(OpenCascadeVersion);
+void gdext_initialize_module(ModuleInitializationLevel p_level) {
+    if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+        return;
     }
 
-    void gdext_uninitialize_module(ModuleInitializationLevel p_level) {
-        (void)p_level;
-        // Teardown logic (if any) goes here.
-    }
+    // Register all discovered wrapper classes
+    GDREGISTER_CLASS(OpenCascadeVersion);
+}
+
+void gdext_uninitialize_module(ModuleInitializationLevel p_level) {
+    (void)p_level;
+    // Teardown logic (if any) goes here.
 }
 
 extern "C" {
