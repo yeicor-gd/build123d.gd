@@ -500,7 +500,7 @@ jobs:
 
   success: # No-op success job for github ruleset detection
     runs-on: ubuntu-24.04
-    needs: retry-on-failure
+    needs: test
     steps:
       - name: CI success marker
         run: echo "CI completed successfully (no-op success job for github ruleset detection)"
