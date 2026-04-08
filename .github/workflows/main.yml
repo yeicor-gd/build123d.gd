@@ -385,7 +385,7 @@ jobs:
         shell: bash
         if: matrix.target.export_name == 'Linux' || matrix.target.export_name == 'Windows Desktop' || matrix.target.export_name == 'macOS'
         run: |
-          DO_BUILD=false GODOT_VERSION="${{ matrix.godot-version }}" ./validate.sh /tmp/a.txt || ( echo "====== ERRORS ======" && cat /tmp/a.txt && exit 1 )
+          DO_BUILD=false GODOT_VERSION="system" ./validate.sh /tmp/a.txt || ( echo "====== ERRORS ======" && cat /tmp/a.txt && exit 1 )
 
       - name: Export demo
         if: matrix.godot-version == needs.read-versions.outputs.godot_max_version
