@@ -2,6 +2,7 @@
 
 #include "Edge.h"
 #include "Face.h"
+#include "Location.h"
 #include "OCCTUtils.h"
 #include "Solid.h"
 #include "Vertex.h"
@@ -198,6 +199,7 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("translated", "offset"), &TopoShape::translated);
     ClassDB::bind_method(D_METHOD("rotated", "axis_origin", "axis_direction", "angle_radians"), &TopoShape::rotated);
     ClassDB::bind_method(D_METHOD("scaled", "center", "factor"), &TopoShape::scaled);
+    ClassDB::bind_method(D_METHOD("located", "location"), &TopoShape::located);
     ClassDB::bind_method(D_METHOD("get_volume"), &TopoShape::get_volume);
     ClassDB::bind_method(D_METHOD("get_surface_area"), &TopoShape::get_surface_area);
     ClassDB::bind_method(D_METHOD("get_center_of_mass"), &TopoShape::get_center_of_mass);
@@ -324,6 +326,18 @@ Ref<TopoShape> TopoShape::scaled(const Vector3 &p_center, double p_factor) const
         gp_Trsf transform;
         transform.SetScale(occt_utils::to_occt_point(p_center), p_factor);
         BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
+        return from_occt(transformer.Shape());
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<TopoShape> TopoShape::located(const Ref<Location> &p_location) const {
+    ensure_shape_present(occt_shape, "TopoShape.located requires a non-null shape.");
+    ERR_FAIL_COND_V_MSG(p_location.is_null(), Ref<TopoShape>(), "TopoShape.located requires a non-null location.");
+
+    try {
+        BRepBuilderAPI_Transform transformer(occt_shape, p_location->get_occt_transform(), Standard_True, Standard_True);
         return from_occt(transformer.Shape());
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));

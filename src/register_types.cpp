@@ -9,9 +9,11 @@
 #include "gdextension_interface.h"
 
 // Include headers for all detected classes
+#include "Axis.h"
 #include "Edge.h"
 #include "Face.h"
 #include "GeometryVector.h"
+#include "Location.h"
 #include "OpenCascadeVersion.h"
 #include "Solid.h"
 #include "SolidBox.h"
@@ -30,7 +32,9 @@ void gdext_initialize_module(ModuleInitializationLevel p_level) {
     }
 
     // Register all discovered wrapper classes
+    GDREGISTER_CLASS(Axis);
     GDREGISTER_CLASS(GeometryVector);
+    GDREGISTER_CLASS(Location);
     GDREGISTER_CLASS(OpenCascadeVersion);
     GDREGISTER_CLASS(TopoShape);
     GDREGISTER_CLASS(Vertex);

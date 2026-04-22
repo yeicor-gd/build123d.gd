@@ -64,6 +64,13 @@
 				Returns a scaled copy of the shape around the specified center.
 			</description>
 		</method>
+		<method name="located" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="location" type="Location" />
+			<description>
+				Returns a transformed copy of the shape using the provided [Location].
+			</description>
+		</method>
 		<method name="get_volume" qualifiers="const">
 			<return type="float" />
 			<description>

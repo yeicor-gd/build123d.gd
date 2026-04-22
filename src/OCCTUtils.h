@@ -5,6 +5,7 @@
 #include <godot_cpp/variant/vector3.hpp>
 
 #include <Standard_Failure.hxx>
+#include <gp_Dir.hxx>
 #include <gp_Pnt.hxx>
 #include <gp_Vec.hxx>
 
@@ -35,6 +36,14 @@ inline godot::Vector3 to_godot_vector3(const gp_Pnt &p_point) {
     );
 }
 
+inline godot::Vector3 to_godot_vector3(const gp_Dir &p_dir) {
+    return godot::Vector3(
+        static_cast<godot::real_t>(p_dir.X()),
+        static_cast<godot::real_t>(p_dir.Y()),
+        static_cast<godot::real_t>(p_dir.Z())
+    );
+}
+
 inline gp_Vec to_occt_vec(const godot::Vector3 &p_vec) {
     return gp_Vec(
         static_cast<double>(p_vec.x),
@@ -48,6 +57,14 @@ inline gp_Pnt to_occt_point(const godot::Vector3 &p_point) {
         static_cast<double>(p_point.x),
         static_cast<double>(p_point.y),
         static_cast<double>(p_point.z)
+    );
+}
+
+inline gp_Dir to_occt_dir(const godot::Vector3 &p_direction) {
+    return gp_Dir(
+        static_cast<double>(p_direction.x),
+        static_cast<double>(p_direction.y),
+        static_cast<double>(p_direction.z)
     );
 }
 

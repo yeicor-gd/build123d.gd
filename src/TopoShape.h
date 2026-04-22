@@ -17,6 +17,7 @@ class Edge;
 class Wire;
 class Face;
 class Solid;
+class Location;
 
 class TopoShape : public godot::RefCounted {
     GDCLASS(TopoShape, godot::RefCounted)
@@ -39,6 +40,7 @@ public:
     godot::Ref<TopoShape> translated(const godot::Vector3 &p_offset) const;
     godot::Ref<TopoShape> rotated(const godot::Vector3 &p_axis_origin, const godot::Vector3 &p_axis_direction, double p_angle_radians) const;
     godot::Ref<TopoShape> scaled(const godot::Vector3 &p_center, double p_factor) const;
+    godot::Ref<TopoShape> located(const godot::Ref<Location> &p_location) const;
 
     double get_volume() const;
     double get_surface_area() const;
