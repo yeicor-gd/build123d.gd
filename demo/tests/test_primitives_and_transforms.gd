@@ -53,6 +53,16 @@ static func test_additional_primitives() -> String:
 	if torus_bounds_size.x < 8.0 or torus_bounds_size.x > 8.8:
 		return "unexpected torus radial bounds size: %s" % torus_bounds_size.x
 
+	var wedge := SolidWedge.new()
+	wedge.build_wedge(4.0, 5.0, 6.0, 1.5, Vector3(1.0, 2.0, 3.0))
+
+	if not _approx(wedge.get_volume(), 82.5, 0.05):
+		return "unexpected wedge volume: %s" % wedge.get_volume()
+	if not _approx_vec(wedge.get_bounding_box_min(), Vector3(1.0, 2.0, 3.0), 0.02):
+		return "unexpected wedge bounds min: %s" % str(wedge.get_bounding_box_min())
+	if not _approx_vec(wedge.get_bounding_box_max(), Vector3(5.0, 7.0, 9.0), 0.02):
+		return "unexpected wedge bounds max: %s" % str(wedge.get_bounding_box_max())
+
 	return ""
 
 

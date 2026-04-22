@@ -24,6 +24,7 @@
 #include "SolidCylinder.h"
 #include "SolidSphere.h"
 #include "SolidTorus.h"
+#include "SolidWedge.h"
 #include "TopoShape.h"
 #include "Vertex.h"
 #include "Wire.h"
@@ -51,6 +52,7 @@ void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
     GDREGISTER_CLASS(SolidCylinder);
     GDREGISTER_CLASS(SolidSphere);
     GDREGISTER_CLASS(SolidTorus);
+    GDREGISTER_CLASS(SolidWedge);
 }
 
 void gdext_uninitialize_module(godot::ModuleInitializationLevel p_level) {

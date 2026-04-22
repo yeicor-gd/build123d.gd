@@ -76,12 +76,14 @@ Implemented:
 - `SolidSphere`
 - `SolidCone`
 - `SolidTorus`
+- `SolidWedge`
 
 Planned validation:
 
 - primitive volume and bounding-box tests
 - transform invariants and transformed bounds tests
 - direct torus primitive tests
+- direct wedge primitive tests
 
 Validation status:
 
@@ -147,7 +149,7 @@ Planned validation:
 
 - typed topology wrappers (`Vertex`, `Edge`, `Wire`, `Face`, `Solid`)
 - transforms (`translate`, `rotate`, `mirror`)
-- more 3D primitives (`Torus`, `Wedge`)
+- more 3D primitives (advanced wedge variants)
 - profile construction (`Line`, `Circle`, `Rectangle`, `Polygon`)
 - feature operations (`extrude`, `revolve`, `loft`, `sweep`)
 - import/export and selectors
