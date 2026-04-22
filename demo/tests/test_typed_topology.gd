@@ -105,6 +105,25 @@ static func test_solid_wrapper() -> String:
 	return ""
 
 
+static func test_compound_wrapper() -> String:
+	var box_a := SolidBox.new()
+	box_a.build_box(Vector3.ONE)
+	var box_b := SolidBox.new()
+	box_b.build_box(Vector3.ONE, Vector3(2.0, 0.0, 0.0))
+
+	var compound := Compound.new()
+	compound.build_compound([box_a, box_b])
+
+	if compound.get_child_count() != 2:
+		return "expected 2 compound children but got %s" % compound.get_child_count()
+	if compound.get_solids().size() != 2:
+		return "expected 2 solids in compound but got %s" % compound.get_solids().size()
+	if not _approx_vec(compound.get_bounding_box_size(), Vector3(3.0, 1.0, 1.0), 0.01):
+		return "unexpected compound bounds size: %s" % str(compound.get_bounding_box_size())
+
+	return ""
+
+
 static func test_toposhape_typed_extraction() -> String:
 	var box := SolidBox.new()
 	box.build_box(Vector3(1.0, 2.0, 3.0))
@@ -156,6 +175,14 @@ static func test_toposhape_typed_extraction() -> String:
 		return "typed shell was not closed"
 	if shell.get_face_count() != 6:
 		return "typed shell had unexpected face count: %s" % shell.get_face_count()
+
+	var compound := Compound.new()
+	compound.build_compound([box])
+	var compounds := compound.get_compounds()
+	if compounds.size() != 1:
+		return "expected 1 typed compound but got %s" % compounds.size()
+	if not compounds[0] is Compound:
+		return "first typed compound was not a Compound instance"
 
 	var solids := box.get_solids()
 	if solids.size() != 1:

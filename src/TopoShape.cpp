@@ -1,6 +1,7 @@
 #include "TopoShape.h"
 
 #include "Axis.h"
+#include "Compound.h"
 #include "Edge.h"
 #include "Face.h"
 #include "Location.h"
@@ -217,6 +218,7 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_wires"), &TopoShape::get_wires);
     ClassDB::bind_method(D_METHOD("get_faces"), &TopoShape::get_faces);
     ClassDB::bind_method(D_METHOD("get_shells"), &TopoShape::get_shells);
+    ClassDB::bind_method(D_METHOD("get_compounds"), &TopoShape::get_compounds);
     ClassDB::bind_method(D_METHOD("get_solids"), &TopoShape::get_solids);
     ClassDB::bind_method(D_METHOD("get_vertex_positions"), &TopoShape::get_vertex_positions);
     ClassDB::bind_method(D_METHOD("get_edge_polylines", "deflection"), &TopoShape::get_edge_polylines, DEFVAL(0.1));
@@ -549,6 +551,22 @@ Array TopoShape::get_shells() const {
             shells.push_back(Shell::from_occt(TopoDS::Shell(indexed_shells(index))));
         }
         return shells;
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Array TopoShape::get_compounds() const {
+    ensure_shape_present(occt_shape, "TopoShape.get_compounds requires a non-null shape.");
+
+    try {
+        Array compounds;
+        TopTools_IndexedMapOfShape indexed_compounds;
+        TopExp::MapShapes(occt_shape, TopAbs_COMPOUND, indexed_compounds);
+        for (int index = 1; index <= indexed_compounds.Extent(); ++index) {
+            compounds.push_back(Compound::from_occt(TopoDS::Compound(indexed_compounds(index))));
+        }
+        return compounds;
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
     }

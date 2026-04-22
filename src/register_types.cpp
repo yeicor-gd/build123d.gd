@@ -11,6 +11,7 @@
 // Include headers for all detected classes
 #include "Axis.h"
 #include "CircleWire.h"
+#include "Compound.h"
 #include "Edge.h"
 #include "Face.h"
 #include "GeometryVector.h"
@@ -44,6 +45,7 @@ void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
     GDREGISTER_CLASS(Vertex);
     GDREGISTER_CLASS(Wire);
     GDREGISTER_CLASS(CircleWire);
+    GDREGISTER_CLASS(Compound);
     GDREGISTER_CLASS(Edge);
     GDREGISTER_CLASS(Face);
     GDREGISTER_CLASS(RectangleWire);

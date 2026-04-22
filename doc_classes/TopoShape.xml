@@ -158,6 +158,12 @@
 				Returns unique topological shells as [Shell] wrappers.
 			</description>
 		</method>
+		<method name="get_compounds" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns unique topological compounds as [Compound] wrappers.
+			</description>
+		</method>
 		<method name="get_solids" qualifiers="const">
 			<return type="Array" />
 			<description>
