@@ -1,10 +1,10 @@
 #ifndef SOLID_SPHERE_H
 #define SOLID_SPHERE_H
 
-#include "TopoShape.h"
+#include "Solid.h"
 
-class SolidSphere : public TopoShape {
-    GDCLASS(SolidSphere, TopoShape)
+class SolidSphere : public Solid {
+    GDCLASS(SolidSphere, Solid)
 
 protected:
     static void _bind_methods();

@@ -3,6 +3,7 @@
 #include "Edge.h"
 #include "Face.h"
 #include "OCCTUtils.h"
+#include "Solid.h"
 #include "Vertex.h"
 #include "Wire.h"
 
@@ -207,6 +208,7 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_edges"), &TopoShape::get_edges);
     ClassDB::bind_method(D_METHOD("get_wires"), &TopoShape::get_wires);
     ClassDB::bind_method(D_METHOD("get_faces"), &TopoShape::get_faces);
+    ClassDB::bind_method(D_METHOD("get_solids"), &TopoShape::get_solids);
     ClassDB::bind_method(D_METHOD("get_vertex_positions"), &TopoShape::get_vertex_positions);
     ClassDB::bind_method(D_METHOD("get_edge_polylines", "deflection"), &TopoShape::get_edge_polylines, DEFVAL(0.1));
     ClassDB::bind_method(D_METHOD("import_step_file", "file_path"), &TopoShape::import_step_file);
@@ -469,6 +471,22 @@ Array TopoShape::get_faces() const {
             faces.push_back(Face::from_occt(TopoDS::Face(indexed_faces(index))));
         }
         return faces;
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Array TopoShape::get_solids() const {
+    ensure_shape_present(occt_shape, "TopoShape.get_solids requires a non-null shape.");
+
+    try {
+        Array solids;
+        TopTools_IndexedMapOfShape indexed_solids;
+        TopExp::MapShapes(occt_shape, TopAbs_SOLID, indexed_solids);
+        for (int index = 1; index <= indexed_solids.Extent(); ++index) {
+            solids.push_back(Solid::from_occt(TopoDS::Solid(indexed_solids(index))));
+        }
+        return solids;
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
     }

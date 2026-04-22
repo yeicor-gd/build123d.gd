@@ -1,10 +1,10 @@
 #ifndef SOLID_CONE_H
 #define SOLID_CONE_H
 
-#include "TopoShape.h"
+#include "Solid.h"
 
-class SolidCone : public TopoShape {
-    GDCLASS(SolidCone, TopoShape)
+class SolidCone : public Solid {
+    GDCLASS(SolidCone, Solid)
 
 protected:
     static void _bind_methods();

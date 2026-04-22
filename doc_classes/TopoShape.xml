@@ -124,6 +124,12 @@
 				Returns unique topological faces as [Face] wrappers.
 			</description>
 		</method>
+		<method name="get_solids" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns unique topological solids as [Solid] wrappers.
+			</description>
+		</method>
 		<method name="get_vertex_positions" qualifiers="const">
 			<return type="PackedVector3Array" />
 			<description>

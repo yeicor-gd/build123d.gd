@@ -1,10 +1,10 @@
 #ifndef SOLID_CYLINDER_H
 #define SOLID_CYLINDER_H
 
-#include "TopoShape.h"
+#include "Solid.h"
 
-class SolidCylinder : public TopoShape {
-    GDCLASS(SolidCylinder, TopoShape)
+class SolidCylinder : public Solid {
+    GDCLASS(SolidCylinder, Solid)
 
 protected:
     static void _bind_methods();

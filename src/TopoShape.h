@@ -16,6 +16,7 @@ class Vertex;
 class Edge;
 class Wire;
 class Face;
+class Solid;
 
 class TopoShape : public godot::RefCounted {
     GDCLASS(TopoShape, godot::RefCounted)
@@ -49,6 +50,7 @@ public:
     godot::Array get_edges() const;
     godot::Array get_wires() const;
     godot::Array get_faces() const;
+    godot::Array get_solids() const;
     godot::PackedVector3Array get_vertex_positions() const;
     godot::Array get_edge_polylines(double p_deflection = 0.1) const;
     bool import_step_file(const godot::String &p_file_path);

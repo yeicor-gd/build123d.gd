@@ -1,10 +1,10 @@
 #ifndef SOLID_BOX_H
 #define SOLID_BOX_H
 
-#include "TopoShape.h"
+#include "Solid.h"
 
-class SolidBox : public TopoShape {
-    GDCLASS(SolidBox, TopoShape)
+class SolidBox : public Solid {
+    GDCLASS(SolidBox, Solid)
 
 protected:
     static void _bind_methods();

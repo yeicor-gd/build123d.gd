@@ -13,6 +13,7 @@
 #include "Face.h"
 #include "GeometryVector.h"
 #include "OpenCascadeVersion.h"
+#include "Solid.h"
 #include "SolidBox.h"
 #include "SolidCone.h"
 #include "SolidCylinder.h"
@@ -36,6 +37,7 @@ void gdext_initialize_module(ModuleInitializationLevel p_level) {
     GDREGISTER_CLASS(Wire);
     GDREGISTER_CLASS(Edge);
     GDREGISTER_CLASS(Face);
+    GDREGISTER_CLASS(Solid);
     GDREGISTER_CLASS(SolidBox);
     GDREGISTER_CLASS(SolidCone);
     GDREGISTER_CLASS(SolidCylinder);

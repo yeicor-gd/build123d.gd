@@ -93,6 +93,18 @@ static func test_face_wrapper() -> String:
 	return ""
 
 
+static func test_solid_wrapper() -> String:
+	var solid := SolidBox.new()
+	solid.build_box(Vector3(1.0, 2.0, 3.0))
+
+	if not solid.is_closed():
+		return "expected solid to be closed"
+	if solid.get_shell_count() != 1:
+		return "expected 1 shell in solid but got %s" % solid.get_shell_count()
+
+	return ""
+
+
 static func test_toposhape_typed_extraction() -> String:
 	var box := SolidBox.new()
 	box.build_box(Vector3(1.0, 2.0, 3.0))
@@ -132,5 +144,15 @@ static func test_toposhape_typed_extraction() -> String:
 	var face: Face = faces[0]
 	if face.get_outer_wire() == null:
 		return "typed face did not expose an outer wire"
+
+	var solids := box.get_solids()
+	if solids.size() != 1:
+		return "expected 1 typed solid but got %s" % solids.size()
+	if not solids[0] is Solid:
+		return "first typed solid was not a Solid instance"
+
+	var solid: Solid = solids[0]
+	if not solid.is_closed():
+		return "typed solid was not closed"
 
 	return ""
