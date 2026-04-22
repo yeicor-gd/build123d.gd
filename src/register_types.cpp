@@ -9,6 +9,7 @@
 #include "gdextension_interface.h"
 
 // Include headers for all detected classes
+#include "Edge.h"
 #include "GeometryVector.h"
 #include "OpenCascadeVersion.h"
 #include "SolidBox.h"
@@ -16,6 +17,7 @@
 #include "SolidCylinder.h"
 #include "SolidSphere.h"
 #include "TopoShape.h"
+#include "Vertex.h"
 
 using namespace godot;
 
@@ -28,6 +30,8 @@ void gdext_initialize_module(ModuleInitializationLevel p_level) {
     GDREGISTER_CLASS(GeometryVector);
     GDREGISTER_CLASS(OpenCascadeVersion);
     GDREGISTER_CLASS(TopoShape);
+    GDREGISTER_CLASS(Vertex);
+    GDREGISTER_CLASS(Edge);
     GDREGISTER_CLASS(SolidBox);
     GDREGISTER_CLASS(SolidCone);
     GDREGISTER_CLASS(SolidCylinder);

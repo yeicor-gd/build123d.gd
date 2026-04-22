@@ -1,6 +1,8 @@
 #include "TopoShape.h"
 
+#include "Edge.h"
 #include "OCCTUtils.h"
+#include "Vertex.h"
 
 #include <godot_cpp/classes/mesh.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
@@ -52,6 +54,23 @@
 using namespace godot;
 
 namespace {
+
+PackedVector3Array sample_edge_polyline(const TopoDS_Edge &p_edge, double p_deflection) {
+    BRepAdaptor_Curve curve(p_edge);
+    GCPnts_QuasiUniformDeflection sampler(curve, p_deflection, curve.FirstParameter(), curve.LastParameter());
+
+    PackedVector3Array polyline;
+    if (sampler.IsDone() && sampler.NbPoints() >= 2) {
+        for (int index = 1; index <= sampler.NbPoints(); ++index) {
+            polyline.push_back(occt_utils::to_godot_vector3(sampler.Value(index)));
+        }
+    } else {
+        polyline.push_back(occt_utils::to_godot_vector3(curve.Value(curve.FirstParameter())));
+        polyline.push_back(occt_utils::to_godot_vector3(curve.Value(curve.LastParameter())));
+    }
+
+    return polyline;
+}
 
 template <typename TOperation>
 Ref<TopoShape> do_boolean_operation(const TopoDS_Shape &p_left, const TopoDS_Shape &p_right) {
@@ -182,6 +201,8 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_bounding_box_min"), &TopoShape::get_bounding_box_min);
     ClassDB::bind_method(D_METHOD("get_bounding_box_max"), &TopoShape::get_bounding_box_max);
     ClassDB::bind_method(D_METHOD("get_bounding_box_size"), &TopoShape::get_bounding_box_size);
+    ClassDB::bind_method(D_METHOD("get_vertices"), &TopoShape::get_vertices);
+    ClassDB::bind_method(D_METHOD("get_edges"), &TopoShape::get_edges);
     ClassDB::bind_method(D_METHOD("get_vertex_positions"), &TopoShape::get_vertex_positions);
     ClassDB::bind_method(D_METHOD("get_edge_polylines", "deflection"), &TopoShape::get_edge_polylines, DEFVAL(0.1));
     ClassDB::bind_method(D_METHOD("import_step_file", "file_path"), &TopoShape::import_step_file);
@@ -385,6 +406,38 @@ Vector3 TopoShape::get_bounding_box_size() const {
     return get_bounding_box_max() - get_bounding_box_min();
 }
 
+Array TopoShape::get_vertices() const {
+    ensure_shape_present(occt_shape, "TopoShape.get_vertices requires a non-null shape.");
+
+    try {
+        Array vertices;
+        TopTools_IndexedMapOfShape indexed_vertices;
+        TopExp::MapShapes(occt_shape, TopAbs_VERTEX, indexed_vertices);
+        for (int index = 1; index <= indexed_vertices.Extent(); ++index) {
+            vertices.push_back(Vertex::from_occt(TopoDS::Vertex(indexed_vertices(index))));
+        }
+        return vertices;
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Array TopoShape::get_edges() const {
+    ensure_shape_present(occt_shape, "TopoShape.get_edges requires a non-null shape.");
+
+    try {
+        Array edges;
+        TopTools_IndexedMapOfShape indexed_edges;
+        TopExp::MapShapes(occt_shape, TopAbs_EDGE, indexed_edges);
+        for (int index = 1; index <= indexed_edges.Extent(); ++index) {
+            edges.push_back(Edge::from_occt(TopoDS::Edge(indexed_edges(index))));
+        }
+        return edges;
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+    }
+}
+
 PackedVector3Array TopoShape::get_vertex_positions() const {
     ensure_shape_present(occt_shape, "TopoShape.get_vertex_positions requires a non-null shape.");
 
@@ -410,21 +463,7 @@ Array TopoShape::get_edge_polylines(double p_deflection) const {
         TopTools_IndexedMapOfShape indexed_edges;
         TopExp::MapShapes(occt_shape, TopAbs_EDGE, indexed_edges);
         for (int edge_index = 1; edge_index <= indexed_edges.Extent(); ++edge_index) {
-            const TopoDS_Edge edge = TopoDS::Edge(indexed_edges(edge_index));
-            BRepAdaptor_Curve curve(edge);
-            GCPnts_QuasiUniformDeflection sampler(curve, p_deflection, curve.FirstParameter(), curve.LastParameter());
-
-            PackedVector3Array polyline;
-            if (sampler.IsDone() && sampler.NbPoints() >= 2) {
-                for (int index = 1; index <= sampler.NbPoints(); ++index) {
-                    polyline.push_back(occt_utils::to_godot_vector3(sampler.Value(index)));
-                }
-            } else {
-                polyline.push_back(occt_utils::to_godot_vector3(curve.Value(curve.FirstParameter())));
-                polyline.push_back(occt_utils::to_godot_vector3(curve.Value(curve.LastParameter())));
-            }
-
-            polylines.push_back(polyline);
+            polylines.push_back(sample_edge_polyline(TopoDS::Edge(indexed_edges(edge_index)), p_deflection));
         }
         return polylines;
     } catch (const Standard_Failure &failure) {

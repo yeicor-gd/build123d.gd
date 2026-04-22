@@ -100,6 +100,18 @@
 				Returns the size of the axis-aligned bounding box.
 			</description>
 		</method>
+		<method name="get_vertices" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns unique topological vertices as [Vertex] wrappers.
+			</description>
+		</method>
+		<method name="get_edges" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns unique topological edges as [Edge] wrappers.
+			</description>
+		</method>
 		<method name="get_vertex_positions" qualifiers="const">
 			<return type="PackedVector3Array" />
 			<description>

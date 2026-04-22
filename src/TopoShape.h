@@ -12,6 +12,9 @@
 
 #include <TopoDS_Shape.hxx>
 
+class Vertex;
+class Edge;
+
 class TopoShape : public godot::RefCounted {
     GDCLASS(TopoShape, godot::RefCounted)
 
@@ -40,6 +43,8 @@ public:
     godot::Vector3 get_bounding_box_min() const;
     godot::Vector3 get_bounding_box_max() const;
     godot::Vector3 get_bounding_box_size() const;
+    godot::Array get_vertices() const;
+    godot::Array get_edges() const;
     godot::PackedVector3Array get_vertex_positions() const;
     godot::Array get_edge_polylines(double p_deflection = 0.1) const;
     bool import_step_file(const godot::String &p_file_path);

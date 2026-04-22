@@ -93,6 +93,9 @@ Goal: move toward build123d’s richer modeling API with typed topology wrappers
 
 Implemented in progress:
 
+- `Vertex` wrapper with direct point construction and inspection
+- `Edge` wrapper with line construction, endpoint inspection, length, and polyline sampling
+- `TopoShape.get_vertices()` and `TopoShape.get_edges()` for unique typed topology extraction
 - `TopoShape.get_vertex_positions()` for direct point extraction from topological vertices
 - `TopoShape.get_edge_polylines(deflection)` for direct edge sampling without forcing mesh conversion
 
@@ -100,7 +103,7 @@ Why this slice starts here:
 
 - it exposes topology-native data immediately in Godot
 - it keeps non-mesh workflows practical for vertices and edges
-- it provides a stable base for future typed `Vertex` and `Edge` wrappers
+- it provides a stable base for future typed `Wire`, `Face`, and `Solid` wrappers
 
 Planned classes:
 
