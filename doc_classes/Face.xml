@@ -30,6 +30,14 @@
 				Builds a prism solid by extruding the face along [param direction].
 			</description>
 		</method>
+		<method name="revolved" qualifiers="const">
+			<return type="Solid" />
+			<param index="0" name="axis" type="Axis" />
+			<param index="1" name="angle_radians" type="float" default="6.283185307179586" />
+			<description>
+				Builds a solid by revolving the face around [param axis]. The default angle performs a full revolution.
+			</description>
+		</method>
 		<method name="is_planar" qualifiers="const">
 			<return type="bool" />
 			<description>

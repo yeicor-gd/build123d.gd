@@ -23,6 +23,15 @@
 				Convenience prism extrusion for closed wires. Internally this builds a face from the wire, then extrudes it along [param direction].
 			</description>
 		</method>
+		<method name="revolved" qualifiers="const">
+			<return type="Solid" />
+			<param index="0" name="axis" type="Axis" />
+			<param index="1" name="angle_radians" type="float" default="6.283185307179586" />
+			<param index="2" name="only_plane" type="bool" default="true" />
+			<description>
+				Convenience revolve for closed wires. Internally this builds a face from the wire, then revolves it around [param axis].
+			</description>
+		</method>
 		<method name="is_closed" qualifiers="const">
 			<return type="bool" />
 			<description>

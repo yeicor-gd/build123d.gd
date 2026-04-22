@@ -105,6 +105,8 @@ Implemented in progress:
 - `CircleWire` profile primitive on top of `Wire` and `CadPlane`, preserving OCCT analytic-circle geometry
 - `Face.extruded(direction)` for first prism-style feature construction
 - `Wire.extruded(direction, only_plane)` as a profile-to-solid convenience bridge
+- `Face.revolved(axis, angle_radians)` for first axis-driven rotational feature construction
+- `Wire.revolved(axis, angle_radians, only_plane)` as a profile-to-solid revolve convenience bridge
 - `TopoShape.get_vertices()` and `TopoShape.get_edges()` for unique typed topology extraction
 - `TopoShape.get_wires()` for unique typed wire extraction
 - `TopoShape.get_faces()` for unique typed face extraction
@@ -135,6 +137,7 @@ Planned validation:
 - rectangular profile construction tests
 - circular profile construction tests
 - linear extrusion tests from faces and wires
+- revolve tests from faces and wires
 - typed wrapper construction and inspection tests
 - placement and orientation tests
 

@@ -1,5 +1,6 @@
 #include "Wire.h"
 
+#include "Axis.h"
 #include "Edge.h"
 #include "Face.h"
 #include "OCCTUtils.h"
@@ -46,6 +47,7 @@ bool points_match(const Vector3 &p_a, const Vector3 &p_b, double p_tolerance = 1
 void Wire::_bind_methods() {
     ClassDB::bind_method(D_METHOD("build_polygon", "points", "closed"), &Wire::build_polygon, DEFVAL(true));
     ClassDB::bind_method(D_METHOD("extruded", "direction", "only_plane"), &Wire::extruded, DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("revolved", "axis", "angle_radians", "only_plane"), &Wire::revolved, DEFVAL(6.28318530717958647692), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("is_closed"), &Wire::is_closed);
     ClassDB::bind_method(D_METHOD("get_length"), &Wire::get_length);
     ClassDB::bind_method(D_METHOD("get_edges"), &Wire::get_edges);
@@ -88,6 +90,16 @@ Ref<Solid> Wire::extruded(const Vector3 &p_direction, bool p_only_plane) const {
     profile.instantiate();
     profile->build_from_wire(Wire::from_occt(TopoDS::Wire(get_occt_shape())), p_only_plane);
     return profile->extruded(p_direction);
+}
+
+Ref<Solid> Wire::revolved(const Ref<Axis> &p_axis, double p_angle_radians, bool p_only_plane) const {
+    ERR_FAIL_COND_V_MSG(is_null(), Ref<Solid>(), "Wire.revolved requires a non-null wire.");
+    ERR_FAIL_COND_V_MSG(!is_closed(), Ref<Solid>(), "Wire.revolved requires a closed wire.");
+
+    Ref<Face> profile;
+    profile.instantiate();
+    profile->build_from_wire(Wire::from_occt(TopoDS::Wire(get_occt_shape())), p_only_plane);
+    return profile->revolved(p_axis, p_angle_radians);
 }
 
 bool Wire::is_closed() const {

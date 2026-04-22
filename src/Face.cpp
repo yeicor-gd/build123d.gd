@@ -1,5 +1,6 @@
 #include "Face.h"
 
+#include "Axis.h"
 #include "OCCTUtils.h"
 #include "Solid.h"
 #include "Wire.h"
@@ -10,6 +11,7 @@
 #include <BRepBuilderAPI_MakeFace.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepPrimAPI_MakePrism.hxx>
+#include <BRepPrimAPI_MakeRevol.hxx>
 #include <BRepTools.hxx>
 #include <BRep_Tool.hxx>
 #include <GeomAbs_SurfaceType.hxx>
@@ -23,6 +25,7 @@ void Face::_bind_methods() {
     ClassDB::bind_method(D_METHOD("build_from_wire", "wire", "only_plane"), &Face::build_from_wire, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("build_polygon", "points", "only_plane"), &Face::build_polygon, DEFVAL(true));
     ClassDB::bind_method(D_METHOD("extruded", "direction"), &Face::extruded);
+    ClassDB::bind_method(D_METHOD("revolved", "axis", "angle_radians"), &Face::revolved, DEFVAL(6.28318530717958647692));
     ClassDB::bind_method(D_METHOD("is_planar"), &Face::is_planar);
     ClassDB::bind_method(D_METHOD("get_outer_wire"), &Face::get_outer_wire);
     ClassDB::bind_method(D_METHOD("get_normal"), &Face::get_normal);
@@ -83,6 +86,25 @@ Ref<Solid> Face::extruded(const Vector3 &p_direction) const {
         const TopoDS_Shape result = builder.Shape();
         ERR_FAIL_COND_V_MSG(result.IsNull(), Ref<Solid>(), "OpenCASCADE prism extrusion returned a null shape.");
         ERR_FAIL_COND_V_MSG(result.ShapeType() != TopAbs_SOLID, Ref<Solid>(), "Face.extruded expected a solid result.");
+        return Solid::from_occt(TopoDS::Solid(result));
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<Solid>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<Solid> Face::revolved(const Ref<Axis> &p_axis, double p_angle_radians) const {
+    ERR_FAIL_COND_V_MSG(is_null(), Ref<Solid>(), "Face.revolved requires a non-null face.");
+    ERR_FAIL_COND_V_MSG(p_axis.is_null(), Ref<Solid>(), "Face.revolved requires a non-null axis.");
+    ERR_FAIL_COND_V_MSG(p_angle_radians == 0.0, Ref<Solid>(), "Face.revolved requires a non-zero angle.");
+
+    try {
+        BRepPrimAPI_MakeRevol builder(get_occt_shape(), p_axis->get_occt_axis(), p_angle_radians, Standard_True);
+        builder.Build();
+        ERR_FAIL_COND_V_MSG(!builder.IsDone(), Ref<Solid>(), "OpenCASCADE revolve operation did not complete.");
+
+        const TopoDS_Shape result = builder.Shape();
+        ERR_FAIL_COND_V_MSG(result.IsNull(), Ref<Solid>(), "OpenCASCADE revolve operation returned a null shape.");
+        ERR_FAIL_COND_V_MSG(result.ShapeType() != TopAbs_SOLID, Ref<Solid>(), "Face.revolved expected a solid result.");
         return Solid::from_occt(TopoDS::Solid(result));
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_V_MSG(Ref<Solid>(), occt_utils::exception_to_string(failure));

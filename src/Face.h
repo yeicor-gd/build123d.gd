@@ -7,6 +7,7 @@
 
 class Wire;
 class Solid;
+class Axis;
 
 class Face : public TopoShape {
     GDCLASS(Face, TopoShape)
@@ -22,6 +23,7 @@ public:
     void build_from_wire(const godot::Ref<Wire> &p_wire, bool p_only_plane = false);
     void build_polygon(const godot::PackedVector3Array &p_points, bool p_only_plane = true);
     godot::Ref<Solid> extruded(const godot::Vector3 &p_direction) const;
+    godot::Ref<Solid> revolved(const godot::Ref<Axis> &p_axis, double p_angle_radians = 6.28318530717958647692) const;
     bool is_planar() const;
     godot::Ref<Wire> get_outer_wire() const;
     godot::Vector3 get_normal() const;
