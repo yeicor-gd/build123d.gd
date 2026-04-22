@@ -13,6 +13,7 @@
 #include "CircleWire.h"
 #include "Compound.h"
 #include "Edge.h"
+#include "EllipseWire.h"
 #include "Face.h"
 #include "GeometryVector.h"
 #include "Location.h"
@@ -48,6 +49,7 @@ void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
     GDREGISTER_CLASS(CircleWire);
     GDREGISTER_CLASS(Compound);
     GDREGISTER_CLASS(Edge);
+    GDREGISTER_CLASS(EllipseWire);
     GDREGISTER_CLASS(Face);
     GDREGISTER_CLASS(RectangleWire);
     GDREGISTER_CLASS(RegularPolygonWire);

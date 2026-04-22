@@ -75,6 +75,37 @@ static func test_circle_wire_custom_plane() -> String:
 	return ""
 
 
+static func test_ellipse_wire_default_plane() -> String:
+	var ellipse := EllipseWire.new()
+	ellipse.build_ellipse(3.0, 2.0)
+
+	if not ellipse.is_closed():
+		return "ellipse wire was not closed"
+	if not _approx_vec(ellipse.get_bounding_box_size(), Vector3(6.0, 4.0, 0.0), 0.02):
+		return "unexpected ellipse bounds size: %s" % str(ellipse.get_bounding_box_size())
+
+	var polyline := ellipse.get_polyline(0.05)
+	if polyline.size() < 8:
+		return "ellipse polyline had too few points"
+
+	return ""
+
+
+static func test_ellipse_wire_custom_plane() -> String:
+	var plane := CadPlane.new()
+	plane.set_plane(Vector3(10.0, 0.0, 0.0), Vector3.UP, Vector3.RIGHT)
+
+	var ellipse := EllipseWire.new()
+	ellipse.build_ellipse(4.0, 1.5, plane)
+
+	if not _approx_vec(ellipse.get_bounding_box_min(), Vector3(6.0, 0.0, -1.5), 0.03):
+		return "unexpected custom-plane ellipse bounds min: %s" % str(ellipse.get_bounding_box_min())
+	if not _approx_vec(ellipse.get_bounding_box_max(), Vector3(14.0, 0.0, 1.5), 0.03):
+		return "unexpected custom-plane ellipse bounds max: %s" % str(ellipse.get_bounding_box_max())
+
+	return ""
+
+
 static func test_regular_polygon_wire_default_plane() -> String:
 	var polygon := RegularPolygonWire.new()
 	polygon.build_regular_polygon(2.0, 6)
