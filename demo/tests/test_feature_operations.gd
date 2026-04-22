@@ -100,3 +100,27 @@ static func test_wire_revolution() -> String:
 		return "unexpected revolved wire radial bounds size: %s" % bounds_size.x
 
 	return ""
+
+
+static func test_wire_loft() -> String:
+	var lower := RectangleWire.new()
+	lower.build_rectangle(Vector2(2.0, 4.0))
+
+	var upper_plane := CadPlane.new()
+	upper_plane.set_plane(Vector3(0.0, 0.0, 5.0), Vector3.FORWARD, Vector3.RIGHT)
+	var upper := RectangleWire.new()
+	upper.build_rectangle(Vector2(2.0, 4.0), upper_plane)
+
+	var loft := lower.lofted_to(upper, true, true)
+	if loft == null or loft.is_null():
+		return "wire loft returned null"
+	if not _approx(loft.get_volume(), 40.0, 0.1):
+		return "unexpected loft volume: %s" % loft.get_volume()
+	if not _approx_vec(loft.get_bounding_box_size(), Vector3(2.0, 4.0, 5.0), 0.05):
+		return "unexpected loft bounds size: %s" % str(loft.get_bounding_box_size())
+
+	var solids := loft.get_solids()
+	if solids.size() != 1:
+		return "expected loft to expose 1 solid but got %s" % solids.size()
+
+	return ""

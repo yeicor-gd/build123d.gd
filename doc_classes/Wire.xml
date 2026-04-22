@@ -15,6 +15,15 @@
 				Builds a polygonal wire through [param points]. When [param closed] is [code]true[/code], the last point is connected back to the first.
 			</description>
 		</method>
+		<method name="lofted_to" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="other" type="Wire" />
+			<param index="1" name="make_solid" type="bool" default="true" />
+			<param index="2" name="ruled" type="bool" default="false" />
+			<description>
+				Builds a loft between this closed wire and [param other]. When [param make_solid] is [code]true[/code], OCCT closes the loft into a solid; when [param ruled] is [code]true[/code], ruled faces are used instead of smoothed approximation.
+			</description>
+		</method>
 		<method name="extruded" qualifiers="const">
 			<return type="Solid" />
 			<param index="0" name="direction" type="Vector3" />

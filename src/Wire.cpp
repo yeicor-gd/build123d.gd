@@ -11,6 +11,7 @@
 #include <BRepAdaptor_Curve.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
 #include <BRepGProp.hxx>
+#include <BRepOffsetAPI_ThruSections.hxx>
 #include <BRepTools_WireExplorer.hxx>
 #include <BRep_Tool.hxx>
 #include <GCPnts_QuasiUniformDeflection.hxx>
@@ -46,6 +47,7 @@ bool points_match(const Vector3 &p_a, const Vector3 &p_b, double p_tolerance = 1
 
 void Wire::_bind_methods() {
     ClassDB::bind_method(D_METHOD("build_polygon", "points", "closed"), &Wire::build_polygon, DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("lofted_to", "other", "make_solid", "ruled"), &Wire::lofted_to, DEFVAL(true), DEFVAL(false));
     ClassDB::bind_method(D_METHOD("extruded", "direction", "only_plane"), &Wire::extruded, DEFVAL(true));
     ClassDB::bind_method(D_METHOD("revolved", "axis", "angle_radians", "only_plane"), &Wire::revolved, DEFVAL(6.28318530717958647692), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("is_closed"), &Wire::is_closed);
@@ -79,6 +81,28 @@ void Wire::build_polygon(const PackedVector3Array &p_points, bool p_closed) {
         set_occt_shape(builder.Shape());
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<TopoShape> Wire::lofted_to(const Ref<Wire> &p_other, bool p_make_solid, bool p_ruled) const {
+    ERR_FAIL_COND_V_MSG(is_null(), Ref<TopoShape>(), "Wire.lofted_to requires a non-null source wire.");
+    ERR_FAIL_COND_V_MSG(p_other.is_null() || p_other->is_null(), Ref<TopoShape>(), "Wire.lofted_to requires a non-null target wire.");
+    ERR_FAIL_COND_V_MSG(!is_closed(), Ref<TopoShape>(), "Wire.lofted_to requires the source wire to be closed.");
+    ERR_FAIL_COND_V_MSG(!p_other->is_closed(), Ref<TopoShape>(), "Wire.lofted_to requires the target wire to be closed.");
+
+    try {
+        BRepOffsetAPI_ThruSections builder(p_make_solid ? Standard_True : Standard_False, p_ruled ? Standard_True : Standard_False, 1.0e-6);
+        builder.SetMutableInput(Standard_False);
+        builder.CheckCompatibility(Standard_True);
+        builder.AddWire(TopoDS::Wire(get_occt_shape()));
+        builder.AddWire(TopoDS::Wire(p_other->get_occt_shape()));
+        builder.Build();
+        ERR_FAIL_COND_V_MSG(!builder.IsDone(), Ref<TopoShape>(), "OpenCASCADE loft operation did not complete.");
+        const TopoDS_Shape result = builder.Shape();
+        ERR_FAIL_COND_V_MSG(result.IsNull(), Ref<TopoShape>(), "OpenCASCADE loft operation returned a null shape.");
+        return TopoShape::from_occt(result);
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
     }
 }
 
