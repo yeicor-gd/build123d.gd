@@ -40,3 +40,36 @@ static func test_rectangle_wire_custom_plane() -> String:
 		return "rectangle polyline had too few points"
 
 	return ""
+
+
+static func test_circle_wire_default_plane() -> String:
+	var circle := CircleWire.new()
+	circle.build_circle(2.0)
+
+	if not circle.is_closed():
+		return "circle wire was not closed"
+	if not _approx(circle.get_length(), TAU * 2.0, 0.02):
+		return "unexpected circle circumference: %s" % circle.get_length()
+	if not _approx_vec(circle.get_bounding_box_size(), Vector3(4.0, 4.0, 0.0), 0.02):
+		return "unexpected circle bounds size: %s" % str(circle.get_bounding_box_size())
+
+	var polyline := circle.get_polyline(0.05)
+	if polyline.size() < 8:
+		return "circle polyline had too few points"
+
+	return ""
+
+
+static func test_circle_wire_custom_plane() -> String:
+	var plane := CadPlane.new()
+	plane.set_plane(Vector3(10.0, 0.0, 0.0), Vector3.UP, Vector3.RIGHT)
+
+	var circle := CircleWire.new()
+	circle.build_circle(3.0, plane)
+
+	if not _approx_vec(circle.get_bounding_box_min(), Vector3(7.0, 0.0, -3.0), 0.02):
+		return "unexpected custom-plane circle bounds min: %s" % str(circle.get_bounding_box_min())
+	if not _approx_vec(circle.get_bounding_box_max(), Vector3(13.0, 0.0, 3.0), 0.02):
+		return "unexpected custom-plane circle bounds max: %s" % str(circle.get_bounding_box_max())
+
+	return ""

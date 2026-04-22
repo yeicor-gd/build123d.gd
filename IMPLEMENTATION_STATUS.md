@@ -102,6 +102,7 @@ Implemented in progress:
 - `CadPlane` helper backed by `gp_Pln` to avoid colliding with Godot's built-in `Plane` type
 - `Location` helper backed by `gp_Trsf`
 - `RectangleWire` profile primitive on top of `Wire` and `CadPlane`
+- `CircleWire` profile primitive on top of `Wire` and `CadPlane`, preserving OCCT analytic-circle geometry
 - `TopoShape.get_vertices()` and `TopoShape.get_edges()` for unique typed topology extraction
 - `TopoShape.get_wires()` for unique typed wire extraction
 - `TopoShape.get_faces()` for unique typed face extraction
@@ -130,6 +131,7 @@ Planned validation:
 - axis/location construction and transform tests
 - plane construction, projection, and transform tests
 - rectangular profile construction tests
+- circular profile construction tests
 - typed wrapper construction and inspection tests
 - placement and orientation tests
 
