@@ -36,6 +36,23 @@ static func test_additional_primitives() -> String:
 	if not _approx_vec(cone.get_bounding_box_size(), Vector3(4.0, 4.0, 6.0), 0.02):
 		return "unexpected cone bounds size: %s" % str(cone.get_bounding_box_size())
 
+	var torus := SolidTorus.new()
+	torus.build_torus(3.0, 1.0, Vector3(2.0, -1.0, 4.0))
+
+	if not _approx(torus.get_volume(), 2.0 * PI * PI * 3.0, 0.05):
+		return "unexpected torus volume: %s" % torus.get_volume()
+	var torus_center := (torus.get_bounding_box_min() + torus.get_bounding_box_max()) * 0.5
+	if not _approx_vec(torus_center, Vector3(2.0, -1.0, 4.0), 0.02):
+		return "unexpected torus bounds center: %s" % str(torus_center)
+
+	var torus_bounds_size := torus.get_bounding_box_size()
+	if not _approx(torus_bounds_size.z, 2.0, 0.02):
+		return "unexpected torus z bounds size: %s" % torus_bounds_size.z
+	if not _approx(torus_bounds_size.x, torus_bounds_size.y, 0.02):
+		return "torus x/y bounds were not symmetric: %s" % str(torus_bounds_size)
+	if torus_bounds_size.x < 8.0 or torus_bounds_size.x > 8.8:
+		return "unexpected torus radial bounds size: %s" % torus_bounds_size.x
+
 	return ""
 
 

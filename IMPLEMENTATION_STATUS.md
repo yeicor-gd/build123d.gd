@@ -75,11 +75,13 @@ Implemented:
 - `SolidCylinder`
 - `SolidSphere`
 - `SolidCone`
+- `SolidTorus`
 
 Planned validation:
 
 - primitive volume and bounding-box tests
 - transform invariants and transformed bounds tests
+- direct torus primitive tests
 
 Validation status:
 
@@ -145,7 +147,7 @@ Planned validation:
 
 - typed topology wrappers (`Vertex`, `Edge`, `Wire`, `Face`, `Solid`)
 - transforms (`translate`, `rotate`, `mirror`)
-- more 3D primitives (`Cylinder`, `Sphere`, `Cone`)
+- more 3D primitives (`Torus`, `Wedge`)
 - profile construction (`Line`, `Circle`, `Rectangle`, `Polygon`)
 - feature operations (`extrude`, `revolve`, `loft`, `sweep`)
 - import/export and selectors
