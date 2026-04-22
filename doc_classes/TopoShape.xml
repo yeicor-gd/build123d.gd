@@ -118,6 +118,12 @@
 				Returns unique topological wires as [Wire] wrappers.
 			</description>
 		</method>
+		<method name="get_faces" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns unique topological faces as [Face] wrappers.
+			</description>
+		</method>
 		<method name="get_vertex_positions" qualifiers="const">
 			<return type="PackedVector3Array" />
 			<description>

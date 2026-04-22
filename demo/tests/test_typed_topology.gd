@@ -66,6 +66,33 @@ static func test_wire_wrapper() -> String:
 	return ""
 
 
+static func test_face_wrapper() -> String:
+	var face := Face.new()
+	face.build_polygon(PackedVector3Array([
+		Vector3.ZERO,
+		Vector3.RIGHT,
+		Vector3(1.0, 1.0, 0.0),
+		Vector3.UP,
+	]), true)
+
+	if not face.is_planar():
+		return "expected face to be planar"
+	if not _approx(face.get_surface_area(), 1.0, 0.01):
+		return "unexpected face area: %s" % face.get_surface_area()
+
+	var outer_wire := face.get_outer_wire()
+	if outer_wire == null or outer_wire.is_null():
+		return "face outer wire was null"
+	if not outer_wire.is_closed():
+		return "face outer wire was not closed"
+
+	var normal := face.get_normal()
+	if not _approx(absf(normal.z), 1.0, 0.01):
+		return "unexpected face normal: %s" % str(normal)
+
+	return ""
+
+
 static func test_toposhape_typed_extraction() -> String:
 	var box := SolidBox.new()
 	box.build_box(Vector3(1.0, 2.0, 3.0))
@@ -95,5 +122,15 @@ static func test_toposhape_typed_extraction() -> String:
 	var wire: Wire = wires[0]
 	if wire.get_edges().is_empty():
 		return "typed wire did not expose any edges"
+
+	var faces := box.get_faces()
+	if faces.size() != 6:
+		return "expected 6 typed faces but got %s" % faces.size()
+	if not faces[0] is Face:
+		return "first typed face was not a Face instance"
+
+	var face: Face = faces[0]
+	if face.get_outer_wire() == null:
+		return "typed face did not expose an outer wire"
 
 	return ""
