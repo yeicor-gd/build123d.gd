@@ -23,6 +23,13 @@
 				Builds a closed polygonal face through [param points].
 			</description>
 		</method>
+		<method name="extruded" qualifiers="const">
+			<return type="Solid" />
+			<param index="0" name="direction" type="Vector3" />
+			<description>
+				Builds a prism solid by extruding the face along [param direction].
+			</description>
+		</method>
 		<method name="is_planar" qualifiers="const">
 			<return type="bool" />
 			<description>

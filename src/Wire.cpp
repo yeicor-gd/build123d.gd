@@ -1,7 +1,9 @@
 #include "Wire.h"
 
 #include "Edge.h"
+#include "Face.h"
 #include "OCCTUtils.h"
+#include "Solid.h"
 
 #include <godot_cpp/core/error_macros.hpp>
 
@@ -43,6 +45,7 @@ bool points_match(const Vector3 &p_a, const Vector3 &p_b, double p_tolerance = 1
 
 void Wire::_bind_methods() {
     ClassDB::bind_method(D_METHOD("build_polygon", "points", "closed"), &Wire::build_polygon, DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("extruded", "direction", "only_plane"), &Wire::extruded, DEFVAL(true));
     ClassDB::bind_method(D_METHOD("is_closed"), &Wire::is_closed);
     ClassDB::bind_method(D_METHOD("get_length"), &Wire::get_length);
     ClassDB::bind_method(D_METHOD("get_edges"), &Wire::get_edges);
@@ -75,6 +78,16 @@ void Wire::build_polygon(const PackedVector3Array &p_points, bool p_closed) {
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
     }
+}
+
+Ref<Solid> Wire::extruded(const Vector3 &p_direction, bool p_only_plane) const {
+    ERR_FAIL_COND_V_MSG(is_null(), Ref<Solid>(), "Wire.extruded requires a non-null wire.");
+    ERR_FAIL_COND_V_MSG(!is_closed(), Ref<Solid>(), "Wire.extruded requires a closed wire.");
+
+    Ref<Face> profile;
+    profile.instantiate();
+    profile->build_from_wire(Wire::from_occt(TopoDS::Wire(get_occt_shape())), p_only_plane);
+    return profile->extruded(p_direction);
 }
 
 bool Wire::is_closed() const {

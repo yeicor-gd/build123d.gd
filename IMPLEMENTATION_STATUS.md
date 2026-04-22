@@ -103,6 +103,8 @@ Implemented in progress:
 - `Location` helper backed by `gp_Trsf`
 - `RectangleWire` profile primitive on top of `Wire` and `CadPlane`
 - `CircleWire` profile primitive on top of `Wire` and `CadPlane`, preserving OCCT analytic-circle geometry
+- `Face.extruded(direction)` for first prism-style feature construction
+- `Wire.extruded(direction, only_plane)` as a profile-to-solid convenience bridge
 - `TopoShape.get_vertices()` and `TopoShape.get_edges()` for unique typed topology extraction
 - `TopoShape.get_wires()` for unique typed wire extraction
 - `TopoShape.get_faces()` for unique typed face extraction
@@ -132,6 +134,7 @@ Planned validation:
 - plane construction, projection, and transform tests
 - rectangular profile construction tests
 - circular profile construction tests
+- linear extrusion tests from faces and wires
 - typed wrapper construction and inspection tests
 - placement and orientation tests
 

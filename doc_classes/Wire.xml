@@ -15,6 +15,14 @@
 				Builds a polygonal wire through [param points]. When [param closed] is [code]true[/code], the last point is connected back to the first.
 			</description>
 		</method>
+		<method name="extruded" qualifiers="const">
+			<return type="Solid" />
+			<param index="0" name="direction" type="Vector3" />
+			<param index="1" name="only_plane" type="bool" default="true" />
+			<description>
+				Convenience prism extrusion for closed wires. Internally this builds a face from the wire, then extrudes it along [param direction].
+			</description>
+		</method>
 		<method name="is_closed" qualifiers="const">
 			<return type="bool" />
 			<description>
