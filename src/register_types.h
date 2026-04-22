@@ -9,11 +9,9 @@
 #include <godot_cpp/godot.hpp>
 #include <godot_cpp/core/defs.hpp>
 
-using namespace godot;
+void gdext_initialize_module(godot::ModuleInitializationLevel p_level);
 
-void gdext_initialize_module(ModuleInitializationLevel p_level);
-
-void gdext_uninitialize_module(ModuleInitializationLevel p_level);
+void gdext_uninitialize_module(godot::ModuleInitializationLevel p_level);
 
 extern "C" {
     auto GDE_EXPORT gdext_library_init(

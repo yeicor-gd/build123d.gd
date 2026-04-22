@@ -15,6 +15,7 @@
 #include "GeometryVector.h"
 #include "Location.h"
 #include "OpenCascadeVersion.h"
+#include "Plane.h"
 #include "Solid.h"
 #include "SolidBox.h"
 #include "SolidCone.h"
@@ -23,16 +24,14 @@
 #include "TopoShape.h"
 #include "Vertex.h"
 #include "Wire.h"
-
-using namespace godot;
-
-void gdext_initialize_module(ModuleInitializationLevel p_level) {
-    if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
+    if (p_level != godot::MODULE_INITIALIZATION_LEVEL_SCENE) {
         return;
     }
 
     // Register all discovered wrapper classes
     GDREGISTER_CLASS(Axis);
+    GDREGISTER_CLASS(CadPlane);
     GDREGISTER_CLASS(GeometryVector);
     GDREGISTER_CLASS(Location);
     GDREGISTER_CLASS(OpenCascadeVersion);
@@ -48,7 +47,7 @@ void gdext_initialize_module(ModuleInitializationLevel p_level) {
     GDREGISTER_CLASS(SolidSphere);
 }
 
-void gdext_uninitialize_module(ModuleInitializationLevel p_level) {
+void gdext_uninitialize_module(godot::ModuleInitializationLevel p_level) {
     (void)p_level;
     // Teardown logic (if any) goes here.
 }
@@ -65,7 +64,7 @@ extern "C" {
 
         init_obj.register_initializer(gdext_initialize_module);
         init_obj.register_terminator(gdext_uninitialize_module);
-        init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
+        init_obj.set_minimum_library_initialization_level(godot::MODULE_INITIALIZATION_LEVEL_SCENE);
 
         return init_obj.init();
     }

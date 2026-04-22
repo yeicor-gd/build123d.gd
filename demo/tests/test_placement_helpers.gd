@@ -61,3 +61,31 @@ static func test_shape_located() -> String:
 		return "unexpected located bounds min: %s" % str(moved.get_bounding_box_min())
 
 	return ""
+
+
+static func test_plane_helper() -> String:
+	var plane := CadPlane.new()
+	plane.set_plane(Vector3.ZERO, Vector3.UP, Vector3.RIGHT)
+
+	if not _approx_vec(plane.get_normal(), Vector3.UP, 0.001):
+		return "unexpected plane normal: %s" % str(plane.get_normal())
+	if not _approx_vec(plane.get_x_direction(), Vector3.RIGHT, 0.001):
+		return "unexpected plane x direction: %s" % str(plane.get_x_direction())
+	if not _approx_vec(plane.get_y_direction(), Vector3(0.0, 0.0, -1.0), 0.001):
+		return "unexpected plane y direction: %s" % str(plane.get_y_direction())
+	if not _approx(plane.signed_distance_to_point(Vector3(0.0, 3.0, 0.0)), 3.0, 0.001):
+		return "unexpected plane distance: %s" % plane.signed_distance_to_point(Vector3(0.0, 3.0, 0.0))
+	if not _approx_vec(plane.project_point(Vector3(2.0, 3.0, 4.0)), Vector3(2.0, 0.0, 4.0), 0.001):
+		return "unexpected projected point: %s" % str(plane.project_point(Vector3(2.0, 3.0, 4.0)))
+
+	var offset_plane := plane.offsetted(2.0)
+	if not _approx_vec(offset_plane.get_origin(), Vector3(0.0, 2.0, 0.0), 0.001):
+		return "unexpected offset plane origin: %s" % str(offset_plane.get_origin())
+
+	var location := Location.new()
+	location.set_translation(Vector3(1.0, 2.0, 3.0))
+	var moved_plane := plane.transformed(location)
+	if not _approx_vec(moved_plane.get_origin(), Vector3(1.0, 2.0, 3.0), 0.001):
+		return "unexpected transformed plane origin: %s" % str(moved_plane.get_origin())
+
+	return ""

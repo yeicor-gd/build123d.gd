@@ -95,11 +95,9 @@ cat > "$HEADER_FILE" << 'EOF'
 #include <godot_cpp/godot.hpp>
 #include <godot_cpp/core/defs.hpp>
 
-using namespace godot;
+void gdext_initialize_module(godot::ModuleInitializationLevel p_level);
 
-void gdext_initialize_module(ModuleInitializationLevel p_level);
-
-void gdext_uninitialize_module(ModuleInitializationLevel p_level);
+void gdext_uninitialize_module(godot::ModuleInitializationLevel p_level);
 
 extern "C" {
     auto GDE_EXPORT gdext_library_init(
@@ -144,11 +142,8 @@ EOF
         sed 's/$/"/'
 
     cat << 'EOF'
-
-using namespace godot;
-
-void gdext_initialize_module(ModuleInitializationLevel p_level) {
-    if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
+void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
+    if (p_level != godot::MODULE_INITIALIZATION_LEVEL_SCENE) {
         return;
     }
 
@@ -165,7 +160,7 @@ EOF
     cat << 'EOF'
 }
 
-void gdext_uninitialize_module(ModuleInitializationLevel p_level) {
+void gdext_uninitialize_module(godot::ModuleInitializationLevel p_level) {
     (void)p_level;
     // Teardown logic (if any) goes here.
 }
@@ -182,7 +177,7 @@ extern "C" {
 
         init_obj.register_initializer(gdext_initialize_module);
         init_obj.register_terminator(gdext_uninitialize_module);
-        init_obj.set_minimum_library_initialization_level(MODULE_INITIALIZATION_LEVEL_SCENE);
+        init_obj.set_minimum_library_initialization_level(godot::MODULE_INITIALIZATION_LEVEL_SCENE);
 
         return init_obj.init();
     }

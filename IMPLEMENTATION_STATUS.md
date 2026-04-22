@@ -99,6 +99,7 @@ Implemented in progress:
 - `Face` wrapper with wire/polygon construction, planarity checks, outer-wire extraction, and representative normal access
 - `Solid` wrapper with closure and shell-count inspection, now serving as the common base for solid primitives
 - `Axis` helper backed by `gp_Ax1`
+- `CadPlane` helper backed by `gp_Pln` to avoid colliding with Godot's built-in `Plane` type
 - `Location` helper backed by `gp_Trsf`
 - `TopoShape.get_vertices()` and `TopoShape.get_edges()` for unique typed topology extraction
 - `TopoShape.get_wires()` for unique typed wire extraction
@@ -126,6 +127,7 @@ Planned validation:
 - face construction and face extraction tests
 - solid extraction and solid-wrapper tests
 - axis/location construction and transform tests
+- plane construction, projection, and transform tests
 - typed wrapper construction and inspection tests
 - placement and orientation tests
 
