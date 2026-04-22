@@ -24,6 +24,13 @@
 				Builds a loft between this closed wire and [param other]. When [param make_solid] is [code]true[/code], OCCT closes the loft into a solid; when [param ruled] is [code]true[/code], ruled faces are used instead of smoothed approximation.
 			</description>
 		</method>
+		<method name="swept_along" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="spine" type="Wire" />
+			<description>
+				Sweeps this closed wire along the wire [param spine] using OCCT pipe construction.
+			</description>
+		</method>
 		<method name="extruded" qualifiers="const">
 			<return type="Solid" />
 			<param index="0" name="direction" type="Vector3" />

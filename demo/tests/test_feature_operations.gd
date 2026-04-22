@@ -124,3 +124,28 @@ static func test_wire_loft() -> String:
 		return "expected loft to expose 1 solid but got %s" % solids.size()
 
 	return ""
+
+
+static func test_wire_sweep() -> String:
+	var profile := RectangleWire.new()
+	profile.build_rectangle(Vector2(2.0, 4.0))
+
+	var spine := Wire.new()
+	spine.build_polygon(PackedVector3Array([
+		Vector3.ZERO,
+		Vector3(0.0, 0.0, 5.0),
+	]), false)
+
+	var sweep := profile.swept_along(spine)
+	if sweep == null or sweep.is_null():
+		return "wire sweep returned null"
+	if not _approx(sweep.get_volume(), 40.0, 0.1):
+		return "unexpected sweep volume: %s" % sweep.get_volume()
+	if not _approx_vec(sweep.get_bounding_box_size(), Vector3(2.0, 4.0, 5.0), 0.05):
+		return "unexpected sweep bounds size: %s" % str(sweep.get_bounding_box_size())
+
+	var solids := sweep.get_solids()
+	if solids.size() != 1:
+		return "expected sweep to expose 1 solid but got %s" % solids.size()
+
+	return ""
