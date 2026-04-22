@@ -9,7 +9,10 @@
 #include "gdextension_interface.h"
 
 // Include headers for all detected classes
+#include "GeometryVector.h"
 #include "OpenCascadeVersion.h"
+#include "SolidBox.h"
+#include "TopoShape.h"
 
 using namespace godot;
 
@@ -19,7 +22,10 @@ void gdext_initialize_module(ModuleInitializationLevel p_level) {
     }
 
     // Register all discovered wrapper classes
+    GDREGISTER_CLASS(GeometryVector);
     GDREGISTER_CLASS(OpenCascadeVersion);
+    GDREGISTER_CLASS(TopoShape);
+    GDREGISTER_CLASS(SolidBox);
 }
 
 void gdext_uninitialize_module(ModuleInitializationLevel p_level) {

@@ -15,9 +15,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HEADER_FILE="$SCRIPT_DIR/register_types.h"
 CPP_FILE="$SCRIPT_DIR/register_types.cpp"
 
-# Temporary file for collecting class names
+# Temporary files for collecting class names and inheritance pairs
 CLASSES_FILE=$(mktemp)
-trap "rm -f $CLASSES_FILE" EXIT
+CLASS_PAIRS_FILE=$(mktemp)
+trap "rm -f $CLASSES_FILE $CLASS_PAIRS_FILE" EXIT
 
 # Find all GDCLASS definitions recursively
 echo "Scanning for GDCLASS definitions..."
@@ -28,8 +29,46 @@ grep -r "GDCLASS\s*(" "$SCRIPT_DIR" \
     --include="*.hpp" \
     --exclude-dir="godot-cpp" \
     --exclude-dir="vcpkg" 2>/dev/null | \
-    sed -E 's/.*GDCLASS\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*,.*/\1/' | \
-    sort | uniq > "$CLASSES_FILE"
+    sed -E 's/.*GDCLASS\s*\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*,\s*([A-Za-z_:][A-Za-z0-9_:]*)\s*\).*/\1|\2/' | \
+    sort | uniq > "$CLASS_PAIRS_FILE"
+
+declare -A CLASS_PARENTS
+declare -A REMAINING
+CLASSES=()
+
+while IFS='|' read -r classname parentname; do
+    [ -z "$classname" ] && continue
+    CLASSES+=("$classname")
+    CLASS_PARENTS["$classname"]="$parentname"
+    REMAINING["$classname"]=1
+done < "$CLASS_PAIRS_FILE"
+
+> "$CLASSES_FILE"
+SORTED_COUNT=0
+
+while [ "$SORTED_COUNT" -lt "${#CLASSES[@]}" ]; do
+    PROGRESSED=0
+    for classname in "${CLASSES[@]}"; do
+        [ -z "${REMAINING[$classname]}" ] && continue
+
+        parentname="${CLASS_PARENTS[$classname]}"
+        if [ -z "${REMAINING[$parentname]}" ]; then
+            echo "$classname" >> "$CLASSES_FILE"
+            unset REMAINING["$classname"]
+            SORTED_COUNT=$((SORTED_COUNT + 1))
+            PROGRESSED=1
+        fi
+    done
+
+    if [ "$PROGRESSED" -eq 0 ]; then
+        for classname in "${CLASSES[@]}"; do
+            [ -z "${REMAINING[$classname]}" ] && continue
+            echo "$classname" >> "$CLASSES_FILE"
+            unset REMAINING["$classname"]
+            SORTED_COUNT=$((SORTED_COUNT + 1))
+        done
+    fi
+done
 
 # Count found classes
 CLASS_COUNT=$(wc -l < "$CLASSES_FILE")

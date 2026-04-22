@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="TopoShape" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		Generic OpenCASCADE topological shape wrapper.
+	</brief_description>
+	<description>
+		[TopoShape] wraps a [code]TopoDS_Shape[/code] and exposes measurements, bounds, copying, and core boolean operations. It is the first reusable topology abstraction for the extension.
+	</description>
+	<methods>
+		<method name="is_null" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] if the wrapper does not currently hold a shape.
+			</description>
+		</method>
+		<method name="copy" qualifiers="const">
+			<return type="TopoShape" />
+			<description>
+				Returns a copied shape.
+			</description>
+		</method>
+		<method name="fuse" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="other" type="TopoShape" />
+			<description>
+				Returns the union of this shape and [param other].
+			</description>
+		</method>
+		<method name="cut" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="other" type="TopoShape" />
+			<description>
+				Returns this shape with [param other] subtracted from it.
+			</description>
+		</method>
+		<method name="common" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="other" type="TopoShape" />
+			<description>
+				Returns the intersection between this shape and [param other].
+			</description>
+		</method>
+		<method name="get_volume" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the OCCT volume of the shape.
+			</description>
+		</method>
+		<method name="get_surface_area" qualifiers="const">
+			<return type="float" />
+			<description>
+				Returns the OCCT surface area of the shape.
+			</description>
+		</method>
+		<method name="get_center_of_mass" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+				Returns the shape center of mass computed from volume properties.
+			</description>
+		</method>
+		<method name="get_bounding_box_min" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+				Returns the minimum point of the axis-aligned bounding box.
+			</description>
+		</method>
+		<method name="get_bounding_box_max" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+				Returns the maximum point of the axis-aligned bounding box.
+			</description>
+		</method>
+		<method name="get_bounding_box_size" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+				Returns the size of the axis-aligned bounding box.
+			</description>
+		</method>
+	</methods>
+</class>

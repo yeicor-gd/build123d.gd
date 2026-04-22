@@ -1,0 +1,56 @@
+#ifndef OCCT_UTILS_H
+#define OCCT_UTILS_H
+
+#include <godot_cpp/variant/string.hpp>
+#include <godot_cpp/variant/vector3.hpp>
+
+#include <Standard_Failure.hxx>
+#include <gp_Pnt.hxx>
+#include <gp_Vec.hxx>
+
+namespace occt_utils {
+
+inline godot::String exception_to_string(const Standard_Failure &p_failure) {
+    const char *message = p_failure.GetMessageString();
+    if (message == nullptr || message[0] == '\0') {
+        return godot::String("OpenCASCADE operation failed");
+    }
+
+    return godot::String(message);
+}
+
+inline godot::Vector3 to_godot_vector3(const gp_Vec &p_vec) {
+    return godot::Vector3(
+        static_cast<godot::real_t>(p_vec.X()),
+        static_cast<godot::real_t>(p_vec.Y()),
+        static_cast<godot::real_t>(p_vec.Z())
+    );
+}
+
+inline godot::Vector3 to_godot_vector3(const gp_Pnt &p_point) {
+    return godot::Vector3(
+        static_cast<godot::real_t>(p_point.X()),
+        static_cast<godot::real_t>(p_point.Y()),
+        static_cast<godot::real_t>(p_point.Z())
+    );
+}
+
+inline gp_Vec to_occt_vec(const godot::Vector3 &p_vec) {
+    return gp_Vec(
+        static_cast<double>(p_vec.x),
+        static_cast<double>(p_vec.y),
+        static_cast<double>(p_vec.z)
+    );
+}
+
+inline gp_Pnt to_occt_point(const godot::Vector3 &p_point) {
+    return gp_Pnt(
+        static_cast<double>(p_point.x),
+        static_cast<double>(p_point.y),
+        static_cast<double>(p_point.z)
+    );
+}
+
+} // namespace occt_utils
+
+#endif // OCCT_UTILS_H
