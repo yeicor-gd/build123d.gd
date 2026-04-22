@@ -3,6 +3,7 @@
 #include "Edge.h"
 #include "OCCTUtils.h"
 #include "Vertex.h"
+#include "Wire.h"
 
 #include <godot_cpp/classes/mesh.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
@@ -203,6 +204,7 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_bounding_box_size"), &TopoShape::get_bounding_box_size);
     ClassDB::bind_method(D_METHOD("get_vertices"), &TopoShape::get_vertices);
     ClassDB::bind_method(D_METHOD("get_edges"), &TopoShape::get_edges);
+    ClassDB::bind_method(D_METHOD("get_wires"), &TopoShape::get_wires);
     ClassDB::bind_method(D_METHOD("get_vertex_positions"), &TopoShape::get_vertex_positions);
     ClassDB::bind_method(D_METHOD("get_edge_polylines", "deflection"), &TopoShape::get_edge_polylines, DEFVAL(0.1));
     ClassDB::bind_method(D_METHOD("import_step_file", "file_path"), &TopoShape::import_step_file);
@@ -433,6 +435,22 @@ Array TopoShape::get_edges() const {
             edges.push_back(Edge::from_occt(TopoDS::Edge(indexed_edges(index))));
         }
         return edges;
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Array TopoShape::get_wires() const {
+    ensure_shape_present(occt_shape, "TopoShape.get_wires requires a non-null shape.");
+
+    try {
+        Array wires;
+        TopTools_IndexedMapOfShape indexed_wires;
+        TopExp::MapShapes(occt_shape, TopAbs_WIRE, indexed_wires);
+        for (int index = 1; index <= indexed_wires.Extent(); ++index) {
+            wires.push_back(Wire::from_occt(TopoDS::Wire(indexed_wires(index))));
+        }
+        return wires;
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
     }

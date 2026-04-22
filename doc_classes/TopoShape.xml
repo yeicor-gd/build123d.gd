@@ -112,6 +112,12 @@
 				Returns unique topological edges as [Edge] wrappers.
 			</description>
 		</method>
+		<method name="get_wires" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns unique topological wires as [Wire] wrappers.
+			</description>
+		</method>
 		<method name="get_vertex_positions" qualifiers="const">
 			<return type="PackedVector3Array" />
 			<description>

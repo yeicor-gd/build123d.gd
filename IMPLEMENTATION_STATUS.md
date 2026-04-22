@@ -95,7 +95,9 @@ Implemented in progress:
 
 - `Vertex` wrapper with direct point construction and inspection
 - `Edge` wrapper with line construction, endpoint inspection, length, and polyline sampling
+- `Wire` wrapper with polygon construction, closure/length inspection, ordered edge traversal, and stitched polyline extraction
 - `TopoShape.get_vertices()` and `TopoShape.get_edges()` for unique typed topology extraction
+- `TopoShape.get_wires()` for unique typed wire extraction
 - `TopoShape.get_vertex_positions()` for direct point extraction from topological vertices
 - `TopoShape.get_edge_polylines(deflection)` for direct edge sampling without forcing mesh conversion
 
@@ -113,6 +115,7 @@ Planned classes:
 Planned validation:
 
 - topology extraction tests for vertices and edges
+- wire construction and wire extraction tests
 - typed wrapper construction and inspection tests
 - placement and orientation tests
 

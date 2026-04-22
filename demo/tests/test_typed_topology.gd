@@ -37,6 +37,35 @@ static func test_edge_wrapper() -> String:
 	return ""
 
 
+static func test_wire_wrapper() -> String:
+	var wire := Wire.new()
+	wire.build_polygon(PackedVector3Array([
+		Vector3.ZERO,
+		Vector3.RIGHT,
+		Vector3(1.0, 0.0, 1.0),
+		Vector3(0.0, 0.0, 1.0),
+	]), true)
+
+	if not wire.is_closed():
+		return "expected wire to be closed"
+	if not _approx(wire.get_length(), 4.0, 0.01):
+		return "unexpected wire length: %s" % wire.get_length()
+
+	var edges := wire.get_edges()
+	if edges.size() != 4:
+		return "expected 4 wire edges but got %s" % edges.size()
+	if not edges[0] is Edge:
+		return "first wire edge was not an Edge instance"
+
+	var polyline := wire.get_polyline(0.05)
+	if polyline.size() < 4:
+		return "wire polyline had too few points"
+	if not _approx_vec(polyline[0], polyline[polyline.size() - 1], 0.001):
+		return "closed wire polyline did not return to its start point"
+
+	return ""
+
+
 static func test_toposhape_typed_extraction() -> String:
 	var box := SolidBox.new()
 	box.build_box(Vector3(1.0, 2.0, 3.0))
@@ -56,5 +85,15 @@ static func test_toposhape_typed_extraction() -> String:
 	var edge: Edge = edges[0]
 	if edge.get_polyline(0.05).size() < 2:
 		return "typed edge polyline had fewer than 2 points"
+
+	var wires := box.get_wires()
+	if wires.size() != 6:
+		return "expected 6 typed wires but got %s" % wires.size()
+	if not wires[0] is Wire:
+		return "first typed wire was not a Wire instance"
+
+	var wire: Wire = wires[0]
+	if wire.get_edges().is_empty():
+		return "typed wire did not expose any edges"
 
 	return ""

@@ -18,6 +18,7 @@
 #include "SolidSphere.h"
 #include "TopoShape.h"
 #include "Vertex.h"
+#include "Wire.h"
 
 using namespace godot;
 
@@ -31,6 +32,7 @@ void gdext_initialize_module(ModuleInitializationLevel p_level) {
     GDREGISTER_CLASS(OpenCascadeVersion);
     GDREGISTER_CLASS(TopoShape);
     GDREGISTER_CLASS(Vertex);
+    GDREGISTER_CLASS(Wire);
     GDREGISTER_CLASS(Edge);
     GDREGISTER_CLASS(SolidBox);
     GDREGISTER_CLASS(SolidCone);
