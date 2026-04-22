@@ -19,6 +19,7 @@
 #include "Location.h"
 #include "OpenCascadeVersion.h"
 #include "Plane.h"
+#include "PolygonWire.h"
 #include "RectangleWire.h"
 #include "RegularPolygonWire.h"
 #include "Shell.h"
@@ -51,6 +52,7 @@ void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
     GDREGISTER_CLASS(Edge);
     GDREGISTER_CLASS(EllipseWire);
     GDREGISTER_CLASS(Face);
+    GDREGISTER_CLASS(PolygonWire);
     GDREGISTER_CLASS(RectangleWire);
     GDREGISTER_CLASS(RegularPolygonWire);
     GDREGISTER_CLASS(Shell);

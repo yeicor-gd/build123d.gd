@@ -133,3 +133,43 @@ static func test_regular_polygon_wire_custom_plane() -> String:
 		return "unexpected custom-plane polygon bounds max: %s" % str(polygon.get_bounding_box_max())
 
 	return ""
+
+
+static func test_polygon_wire_default_plane() -> String:
+	var polygon := PolygonWire.new()
+	polygon.build_polygon_2d(PackedVector2Array([
+		Vector2.ZERO,
+		Vector2(2.0, 0.0),
+		Vector2(2.0, 3.0),
+		Vector2(0.0, 3.0),
+	]))
+
+	if not polygon.is_closed():
+		return "2d polygon wire was not closed"
+	if not _approx(polygon.get_length(), 10.0, 0.01):
+		return "unexpected 2d polygon perimeter: %s" % polygon.get_length()
+	if not _approx_vec(polygon.get_bounding_box_size(), Vector3(2.0, 3.0, 0.0), 0.01):
+		return "unexpected 2d polygon bounds size: %s" % str(polygon.get_bounding_box_size())
+
+	return ""
+
+
+static func test_polygon_wire_custom_plane_open() -> String:
+	var plane := CadPlane.new()
+	plane.set_plane(Vector3(10.0, 0.0, 0.0), Vector3.UP, Vector3.RIGHT)
+
+	var polygon := PolygonWire.new()
+	polygon.build_polygon_2d(PackedVector2Array([
+		Vector2.ZERO,
+		Vector2(2.0, 0.0),
+		Vector2(2.0, 3.0),
+	]), plane, false)
+
+	if polygon.is_closed():
+		return "custom-plane open polygon wire was unexpectedly closed"
+	if not _approx_vec(polygon.get_bounding_box_min(), Vector3(10.0, 0.0, -3.0), 0.01):
+		return "unexpected custom-plane open polygon bounds min: %s" % str(polygon.get_bounding_box_min())
+	if not _approx_vec(polygon.get_bounding_box_max(), Vector3(12.0, 0.0, 0.0), 0.01):
+		return "unexpected custom-plane open polygon bounds max: %s" % str(polygon.get_bounding_box_max())
+
+	return ""

@@ -111,6 +111,7 @@ Implemented in progress:
 - `CircleWire` profile primitive on top of `Wire` and `CadPlane`, preserving OCCT analytic-circle geometry
 - `EllipseWire` profile primitive on top of `Wire` and `CadPlane`, preserving OCCT analytic-ellipse geometry
 - `RegularPolygonWire` profile primitive on top of `Wire` and `CadPlane`
+- `PolygonWire` sketch convenience for plane-based 2D point profiles
 - `Face.extruded(direction)` for first prism-style feature construction
 - `Wire.extruded(direction, only_plane)` as a profile-to-solid convenience bridge
 - `Face.revolved(axis, angle_radians)` for first axis-driven rotational feature construction
@@ -153,6 +154,7 @@ Planned validation:
 - circular profile construction tests
 - ellipse profile construction tests
 - regular polygon profile construction tests
+- plane-based polygon profile construction tests
 - linear extrusion tests from faces and wires
 - revolve tests from faces and wires
 - loft tests between closed profile wires
