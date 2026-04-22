@@ -5,7 +5,9 @@
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/classes/array_mesh.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/array.hpp>
 #include <godot_cpp/variant/packed_byte_array.hpp>
+#include <godot_cpp/variant/packed_vector3_array.hpp>
 #include <godot_cpp/variant/vector3.hpp>
 
 #include <TopoDS_Shape.hxx>
@@ -38,6 +40,8 @@ public:
     godot::Vector3 get_bounding_box_min() const;
     godot::Vector3 get_bounding_box_max() const;
     godot::Vector3 get_bounding_box_size() const;
+    godot::PackedVector3Array get_vertex_positions() const;
+    godot::Array get_edge_polylines(double p_deflection = 0.1) const;
     bool import_step_file(const godot::String &p_file_path);
     bool export_step_file(const godot::String &p_file_path) const;
     bool import_step_bytes(const godot::PackedByteArray &p_data);

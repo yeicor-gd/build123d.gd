@@ -91,6 +91,17 @@ Validation status:
 
 Goal: move toward build123d’s richer modeling API with typed topology wrappers and placement/orientation helpers.
 
+Implemented in progress:
+
+- `TopoShape.get_vertex_positions()` for direct point extraction from topological vertices
+- `TopoShape.get_edge_polylines(deflection)` for direct edge sampling without forcing mesh conversion
+
+Why this slice starts here:
+
+- it exposes topology-native data immediately in Godot
+- it keeps non-mesh workflows practical for vertices and edges
+- it provides a stable base for future typed `Vertex` and `Edge` wrappers
+
 Planned classes:
 
 - `Vertex`, `Edge`, `Wire`, `Face`, `Solid`
@@ -98,6 +109,7 @@ Planned classes:
 
 Planned validation:
 
+- topology extraction tests for vertices and edges
 - typed wrapper construction and inspection tests
 - placement and orientation tests
 

@@ -14,6 +14,7 @@
 #include <BRepAlgoAPI_Common.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
+#include <BRepAdaptor_Curve.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <Message.hxx>
 #include <BRepBndLib.hxx>
@@ -22,6 +23,7 @@
 #include <BRepMesh_IncrementalMesh.hxx>
 #include <BRep_Tool.hxx>
 #include <Bnd_Box.hxx>
+#include <GCPnts_QuasiUniformDeflection.hxx>
 #include <GProp_GProps.hxx>
 #include <IFSelect_ReturnStatus.hxx>
 #include <Poly_Triangle.hxx>
@@ -31,8 +33,10 @@
 #include <StlAPI_Writer.hxx>
 #include <TopAbs_Orientation.hxx>
 #include <TopAbs_ShapeEnum.hxx>
+#include <TopExp.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopLoc_Location.hxx>
+#include <TopTools_IndexedMapOfShape.hxx>
 #include <TopoDS.hxx>
 #include <gp_Ax1.hxx>
 #include <gp_Dir.hxx>
@@ -178,6 +182,8 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_bounding_box_min"), &TopoShape::get_bounding_box_min);
     ClassDB::bind_method(D_METHOD("get_bounding_box_max"), &TopoShape::get_bounding_box_max);
     ClassDB::bind_method(D_METHOD("get_bounding_box_size"), &TopoShape::get_bounding_box_size);
+    ClassDB::bind_method(D_METHOD("get_vertex_positions"), &TopoShape::get_vertex_positions);
+    ClassDB::bind_method(D_METHOD("get_edge_polylines", "deflection"), &TopoShape::get_edge_polylines, DEFVAL(0.1));
     ClassDB::bind_method(D_METHOD("import_step_file", "file_path"), &TopoShape::import_step_file);
     ClassDB::bind_method(D_METHOD("export_step_file", "file_path"), &TopoShape::export_step_file);
     ClassDB::bind_method(D_METHOD("import_step_bytes", "data"), &TopoShape::import_step_bytes);
@@ -377,6 +383,53 @@ Vector3 TopoShape::get_bounding_box_max() const {
 
 Vector3 TopoShape::get_bounding_box_size() const {
     return get_bounding_box_max() - get_bounding_box_min();
+}
+
+PackedVector3Array TopoShape::get_vertex_positions() const {
+    ensure_shape_present(occt_shape, "TopoShape.get_vertex_positions requires a non-null shape.");
+
+    try {
+        PackedVector3Array vertices;
+        TopTools_IndexedMapOfShape indexed_vertices;
+        TopExp::MapShapes(occt_shape, TopAbs_VERTEX, indexed_vertices);
+        for (int index = 1; index <= indexed_vertices.Extent(); ++index) {
+            vertices.push_back(occt_utils::to_godot_vector3(BRep_Tool::Pnt(TopoDS::Vertex(indexed_vertices(index)))));
+        }
+        return vertices;
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(PackedVector3Array(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Array TopoShape::get_edge_polylines(double p_deflection) const {
+    ensure_shape_present(occt_shape, "TopoShape.get_edge_polylines requires a non-null shape.");
+    ERR_FAIL_COND_V_MSG(p_deflection <= 0.0, Array(), "TopoShape.get_edge_polylines requires a positive deflection.");
+
+    try {
+        Array polylines;
+        TopTools_IndexedMapOfShape indexed_edges;
+        TopExp::MapShapes(occt_shape, TopAbs_EDGE, indexed_edges);
+        for (int edge_index = 1; edge_index <= indexed_edges.Extent(); ++edge_index) {
+            const TopoDS_Edge edge = TopoDS::Edge(indexed_edges(edge_index));
+            BRepAdaptor_Curve curve(edge);
+            GCPnts_QuasiUniformDeflection sampler(curve, p_deflection, curve.FirstParameter(), curve.LastParameter());
+
+            PackedVector3Array polyline;
+            if (sampler.IsDone() && sampler.NbPoints() >= 2) {
+                for (int index = 1; index <= sampler.NbPoints(); ++index) {
+                    polyline.push_back(occt_utils::to_godot_vector3(sampler.Value(index)));
+                }
+            } else {
+                polyline.push_back(occt_utils::to_godot_vector3(curve.Value(curve.FirstParameter())));
+                polyline.push_back(occt_utils::to_godot_vector3(curve.Value(curve.LastParameter())));
+            }
+
+            polylines.push_back(polyline);
+        }
+        return polylines;
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+    }
 }
 
 bool TopoShape::import_step_file(const String &p_file_path) {
