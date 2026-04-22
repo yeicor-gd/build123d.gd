@@ -109,6 +109,7 @@ Implemented in progress:
 - `Location` helper backed by `gp_Trsf`
 - `RectangleWire` profile primitive on top of `Wire` and `CadPlane`
 - `CircleWire` profile primitive on top of `Wire` and `CadPlane`, preserving OCCT analytic-circle geometry
+- `RegularPolygonWire` profile primitive on top of `Wire` and `CadPlane`
 - `Face.extruded(direction)` for first prism-style feature construction
 - `Wire.extruded(direction, only_plane)` as a profile-to-solid convenience bridge
 - `Face.revolved(axis, angle_radians)` for first axis-driven rotational feature construction
@@ -149,6 +150,7 @@ Planned validation:
 - plane construction, projection, and transform tests
 - rectangular profile construction tests
 - circular profile construction tests
+- regular polygon profile construction tests
 - linear extrusion tests from faces and wires
 - revolve tests from faces and wires
 - loft tests between closed profile wires
