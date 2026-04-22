@@ -36,24 +36,32 @@ Validation status:
 
 ## Next In Progress
 
-### Slice 2: Typed topology and transforms
+### Slice 2: Interchange and Mesh Conversion
 
-Goal: build on `TopoShape` with more shape-specialized and transform-oriented APIs.
+Goal: make the OCCT-backed shapes practical in Godot by supporting robust CAD interchange and render-mesh generation.
 
-Planned classes:
+Implemented:
 
-- `Vertex`, `Edge`, `Wire`, `Face`, `Solid`
-- `Plane`, `Axis`, `Location`
-- transform helpers on shapes (`translate`, `rotate`, `mirror`)
+- STEP import/export from file paths and byte buffers on `TopoShape`
+- STL import/export from file paths and byte buffers on `TopoShape`
+- `TopoShape.to_array_mesh()` using OCCT triangulation
+- regression coverage for STEP round-trips, STL round-trips, and mesh conversion
+
+Current blocker:
+
+- BREP import/export was investigated and partially implemented, but OCCT serialization paths in this build still crash under repeated in-process use. The public API for BREP has been deferred until a stable approach is identified.
 
 Planned validation:
 
-- shape transform tests
-- typed wrapper construction tests
-- additional primitive tests (`Cylinder`, `Sphere`, `Cone`)
+- STEP file/byte round-trip tests
+- STL file/byte round-trip tests
+- mesh AABB and surface generation tests
 
 ## Next Likely Slices
 
+- typed topology wrappers (`Vertex`, `Edge`, `Wire`, `Face`, `Solid`)
+- transforms (`translate`, `rotate`, `mirror`)
+- more 3D primitives (`Cylinder`, `Sphere`, `Cone`)
 - profile construction (`Line`, `Circle`, `Rectangle`, `Polygon`)
 - feature operations (`extrude`, `revolve`, `loft`, `sweep`)
 - import/export and selectors

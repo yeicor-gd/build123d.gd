@@ -3,7 +3,9 @@
 
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/classes/ref_counted.hpp>
+#include <godot_cpp/classes/array_mesh.hpp>
 #include <godot_cpp/core/class_db.hpp>
+#include <godot_cpp/variant/packed_byte_array.hpp>
 #include <godot_cpp/variant/vector3.hpp>
 
 #include <TopoDS_Shape.hxx>
@@ -33,6 +35,15 @@ public:
     godot::Vector3 get_bounding_box_min() const;
     godot::Vector3 get_bounding_box_max() const;
     godot::Vector3 get_bounding_box_size() const;
+    bool import_step_file(const godot::String &p_file_path);
+    bool export_step_file(const godot::String &p_file_path) const;
+    bool import_step_bytes(const godot::PackedByteArray &p_data);
+    godot::PackedByteArray export_step_bytes() const;
+    bool import_stl_file(const godot::String &p_file_path);
+    bool export_stl_file(const godot::String &p_file_path, bool p_ascii = false) const;
+    bool import_stl_bytes(const godot::PackedByteArray &p_data);
+    godot::PackedByteArray export_stl_bytes(bool p_ascii = false) const;
+    godot::Ref<godot::ArrayMesh> to_array_mesh(double p_linear_deflection = 0.1, double p_angular_deflection = 0.5) const;
 
     void set_occt_shape(const TopoDS_Shape &p_shape);
     const TopoDS_Shape &get_occt_shape() const;

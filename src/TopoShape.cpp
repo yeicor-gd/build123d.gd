@@ -2,16 +2,44 @@
 
 #include "OCCTUtils.h"
 
+#include <godot_cpp/classes/mesh.hpp>
+#include <godot_cpp/classes/project_settings.hpp>
 #include <godot_cpp/core/error_macros.hpp>
+#include <godot_cpp/variant/array.hpp>
+#include <godot_cpp/variant/packed_byte_array.hpp>
+#include <godot_cpp/variant/packed_int32_array.hpp>
+#include <godot_cpp/variant/packed_vector2_array.hpp>
+#include <godot_cpp/variant/packed_vector3_array.hpp>
 
 #include <BRepAlgoAPI_Common.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
+#include <Message.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepBuilderAPI_Copy.hxx>
 #include <BRepGProp.hxx>
+#include <BRepMesh_IncrementalMesh.hxx>
+#include <BRep_Tool.hxx>
 #include <Bnd_Box.hxx>
 #include <GProp_GProps.hxx>
+#include <IFSelect_ReturnStatus.hxx>
+#include <Poly_Triangle.hxx>
+#include <STEPControl_Reader.hxx>
+#include <STEPControl_Writer.hxx>
+#include <StlAPI_Reader.hxx>
+#include <StlAPI_Writer.hxx>
+#include <TopAbs_Orientation.hxx>
+#include <TopAbs_ShapeEnum.hxx>
+#include <TopExp_Explorer.hxx>
+#include <TopLoc_Location.hxx>
+#include <TopoDS.hxx>
+
+#include <fstream>
+#include <ios>
+#include <sstream>
+#include <string>
+#include <chrono>
+#include <filesystem>
 
 using namespace godot;
 
@@ -29,6 +57,106 @@ void ensure_shape_present(const TopoDS_Shape &p_shape, const char *p_context) {
     ERR_FAIL_COND_MSG(p_shape.IsNull(), p_context);
 }
 
+String globalize_path(const String &p_path) {
+    if (p_path.begins_with("res://") || p_path.begins_with("user://")) {
+        return ProjectSettings::get_singleton()->globalize_path(p_path);
+    }
+    return p_path;
+}
+
+std::string to_std_string(const String &p_string) {
+    CharString utf8 = p_string.utf8();
+    return std::string(utf8.get_data(), static_cast<size_t>(utf8.length()));
+}
+
+PackedByteArray to_packed_byte_array(const std::string &p_data) {
+    PackedByteArray bytes;
+    for (unsigned char byte : p_data) {
+        bytes.push_back(static_cast<int64_t>(byte));
+    }
+    return bytes;
+}
+
+std::string to_std_string(const PackedByteArray &p_data) {
+    if (p_data.is_empty()) {
+        return std::string();
+    }
+    return std::string(reinterpret_cast<const char *>(p_data.ptr()), static_cast<size_t>(p_data.size()));
+}
+
+bool read_file_bytes(const std::filesystem::path &p_path, std::string &r_data) {
+    std::ifstream input(p_path, std::ios::binary);
+    if (!input.is_open()) {
+        return false;
+    }
+
+    std::ostringstream buffer;
+    buffer << input.rdbuf();
+    r_data = buffer.str();
+    return input.good() || input.eof();
+}
+
+bool write_file_bytes(const std::filesystem::path &p_path, const PackedByteArray &p_data) {
+    std::ofstream output(p_path, std::ios::binary | std::ios::trunc);
+    if (!output.is_open()) {
+        return false;
+    }
+
+    if (!p_data.is_empty()) {
+        output.write(reinterpret_cast<const char *>(p_data.ptr()), p_data.size());
+    }
+    return output.good();
+}
+
+std::filesystem::path make_temp_path(const char *p_extension) {
+    const auto base = std::filesystem::temp_directory_path();
+    const auto unique = std::to_string(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+    return base / ("build123d_gd_" + unique + p_extension);
+}
+
+bool is_status_done(const IFSelect_ReturnStatus p_status) {
+    return p_status == IFSelect_RetDone;
+}
+
+class ScopedOcctMessengerSilence {
+private:
+    Handle(Message_Messenger) messenger;
+    Message_SequenceOfPrinters printers;
+
+public:
+    ScopedOcctMessengerSilence() :
+            messenger(Message::DefaultMessenger()),
+            printers(messenger->Printers()) {
+        messenger->ChangePrinters().Clear();
+    }
+
+    ~ScopedOcctMessengerSilence() {
+        messenger->ChangePrinters() = printers;
+    }
+};
+
+bool import_step_stream_impl(TopoDS_Shape &r_shape, std::istream &p_stream) {
+    ScopedOcctMessengerSilence silence;
+    STEPControl_Reader reader;
+    if (!is_status_done(reader.ReadStream("memory.step", p_stream))) {
+        return false;
+    }
+    if (reader.TransferRoots() <= 0) {
+        return false;
+    }
+    r_shape = reader.OneShape();
+    return !r_shape.IsNull();
+}
+
+bool export_step_stream_impl(const TopoDS_Shape &p_shape, std::ostream &p_stream) {
+    ScopedOcctMessengerSilence silence;
+    STEPControl_Writer writer;
+    if (!is_status_done(writer.Transfer(p_shape, STEPControl_AsIs))) {
+        return false;
+    }
+    return is_status_done(writer.WriteStream(p_stream));
+}
+
 } // namespace
 
 void TopoShape::_bind_methods() {
@@ -43,6 +171,15 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_bounding_box_min"), &TopoShape::get_bounding_box_min);
     ClassDB::bind_method(D_METHOD("get_bounding_box_max"), &TopoShape::get_bounding_box_max);
     ClassDB::bind_method(D_METHOD("get_bounding_box_size"), &TopoShape::get_bounding_box_size);
+    ClassDB::bind_method(D_METHOD("import_step_file", "file_path"), &TopoShape::import_step_file);
+    ClassDB::bind_method(D_METHOD("export_step_file", "file_path"), &TopoShape::export_step_file);
+    ClassDB::bind_method(D_METHOD("import_step_bytes", "data"), &TopoShape::import_step_bytes);
+    ClassDB::bind_method(D_METHOD("export_step_bytes"), &TopoShape::export_step_bytes);
+    ClassDB::bind_method(D_METHOD("import_stl_file", "file_path"), &TopoShape::import_stl_file);
+    ClassDB::bind_method(D_METHOD("export_stl_file", "file_path", "ascii"), &TopoShape::export_stl_file, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("import_stl_bytes", "data"), &TopoShape::import_stl_bytes);
+    ClassDB::bind_method(D_METHOD("export_stl_bytes", "ascii"), &TopoShape::export_stl_bytes, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("to_array_mesh", "linear_deflection", "angular_deflection"), &TopoShape::to_array_mesh, DEFVAL(0.1), DEFVAL(0.5));
 }
 
 TopoShape::TopoShape() = default;
@@ -182,6 +319,238 @@ Vector3 TopoShape::get_bounding_box_max() const {
 
 Vector3 TopoShape::get_bounding_box_size() const {
     return get_bounding_box_max() - get_bounding_box_min();
+}
+
+bool TopoShape::import_step_file(const String &p_file_path) {
+    try {
+        const std::string path = to_std_string(globalize_path(p_file_path));
+        std::ifstream stream(path, std::ios::binary);
+        if (!stream.is_open()) {
+            return false;
+        }
+        TopoDS_Shape shape;
+        if (!import_step_stream_impl(shape, stream)) {
+            return false;
+        }
+        set_occt_shape(shape);
+        return !occt_shape.IsNull();
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+    }
+}
+
+bool TopoShape::export_step_file(const String &p_file_path) const {
+    ensure_shape_present(occt_shape, "TopoShape.export_step_file requires a non-null shape.");
+
+    try {
+        const std::string path = to_std_string(globalize_path(p_file_path));
+        std::ofstream stream(path, std::ios::binary | std::ios::trunc);
+        if (!stream.is_open()) {
+            return false;
+        }
+        if (!export_step_stream_impl(occt_shape, stream)) {
+            return false;
+        }
+        return stream.good();
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+    }
+}
+
+bool TopoShape::import_step_bytes(const PackedByteArray &p_data) {
+    try {
+        std::istringstream stream(to_std_string(p_data));
+        TopoDS_Shape shape;
+        if (!import_step_stream_impl(shape, stream)) {
+            return false;
+        }
+        set_occt_shape(shape);
+        return true;
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+    }
+}
+
+PackedByteArray TopoShape::export_step_bytes() const {
+    ensure_shape_present(occt_shape, "TopoShape.export_step_bytes requires a non-null shape.");
+
+    try {
+        std::ostringstream stream;
+        if (!export_step_stream_impl(occt_shape, stream)) {
+            return PackedByteArray();
+        }
+        return to_packed_byte_array(stream.str());
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(PackedByteArray(), occt_utils::exception_to_string(failure));
+    }
+}
+
+bool TopoShape::import_stl_file(const String &p_file_path) {
+    try {
+        TopoDS_Shape shape;
+        StlAPI_Reader reader;
+        const std::string path = to_std_string(globalize_path(p_file_path));
+        if (!reader.Read(shape, path.c_str())) {
+            return false;
+        }
+        set_occt_shape(shape);
+        return !occt_shape.IsNull();
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+    }
+}
+
+bool TopoShape::export_stl_file(const String &p_file_path, bool p_ascii) const {
+    ensure_shape_present(occt_shape, "TopoShape.export_stl_file requires a non-null shape.");
+
+    try {
+        BRepMesh_IncrementalMesh mesher(occt_shape, 0.1, Standard_False, 0.5, Standard_True);
+        mesher.Perform();
+
+        StlAPI_Writer writer;
+        writer.ASCIIMode() = p_ascii;
+        const std::string path = to_std_string(globalize_path(p_file_path));
+        return writer.Write(occt_shape, path.c_str());
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+    }
+}
+
+bool TopoShape::import_stl_bytes(const PackedByteArray &p_data) {
+    try {
+        const std::filesystem::path temp_path = make_temp_path(".stl");
+        if (!write_file_bytes(temp_path, p_data)) {
+            return false;
+        }
+
+        TopoDS_Shape shape;
+        StlAPI_Reader reader;
+        const bool success = reader.Read(shape, temp_path.string().c_str()) && !shape.IsNull();
+        std::error_code remove_error;
+        std::filesystem::remove(temp_path, remove_error);
+        if (success) {
+            set_occt_shape(shape);
+        }
+        return success;
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+    }
+}
+
+PackedByteArray TopoShape::export_stl_bytes(bool p_ascii) const {
+    ensure_shape_present(occt_shape, "TopoShape.export_stl_bytes requires a non-null shape.");
+
+    try {
+        const std::filesystem::path temp_path = make_temp_path(".stl");
+        StlAPI_Writer writer;
+        writer.ASCIIMode() = p_ascii;
+        if (!writer.Write(occt_shape, temp_path.string().c_str())) {
+            return PackedByteArray();
+        }
+
+        std::string data;
+        const bool read_ok = read_file_bytes(temp_path, data);
+        std::error_code remove_error;
+        std::filesystem::remove(temp_path, remove_error);
+        if (!read_ok) {
+            return PackedByteArray();
+        }
+        return to_packed_byte_array(data);
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(PackedByteArray(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<ArrayMesh> TopoShape::to_array_mesh(double p_linear_deflection, double p_angular_deflection) const {
+    ensure_shape_present(occt_shape, "TopoShape.to_array_mesh requires a non-null shape.");
+    ERR_FAIL_COND_V_MSG(p_linear_deflection <= 0.0, Ref<ArrayMesh>(), "TopoShape.to_array_mesh requires a positive linear deflection.");
+    ERR_FAIL_COND_V_MSG(p_angular_deflection <= 0.0, Ref<ArrayMesh>(), "TopoShape.to_array_mesh requires a positive angular deflection.");
+
+    try {
+        BRepMesh_IncrementalMesh mesher(
+            occt_shape,
+            static_cast<double>(p_linear_deflection),
+            Standard_False,
+            static_cast<double>(p_angular_deflection),
+            Standard_True
+        );
+        mesher.Perform();
+
+        PackedVector3Array vertices;
+        PackedVector3Array normals;
+        PackedVector2Array uvs;
+        PackedInt32Array indices;
+
+        int32_t vertex_offset = 0;
+        for (TopExp_Explorer face_explorer(occt_shape, TopAbs_FACE); face_explorer.More(); face_explorer.Next()) {
+            const TopoDS_Face face = TopoDS::Face(face_explorer.Current());
+            TopLoc_Location location;
+            const Handle(Poly_Triangulation) triangulation = BRep_Tool::Triangulation(face, location);
+            if (triangulation.IsNull() || triangulation->NbNodes() == 0 || triangulation->NbTriangles() == 0) {
+                continue;
+            }
+
+            const auto transform = location.Transformation();
+            const bool has_normals = triangulation->HasNormals();
+            const bool has_uvs = triangulation->HasUVNodes();
+
+            for (int node_index = 1; node_index <= triangulation->NbNodes(); ++node_index) {
+                const gp_Pnt transformed_point = triangulation->Node(node_index).Transformed(transform);
+                vertices.push_back(occt_utils::to_godot_vector3(transformed_point));
+
+                if (has_normals) {
+                    const gp_Dir transformed_normal = triangulation->Normal(node_index).Transformed(transform);
+                    normals.push_back(Vector3(
+                        static_cast<real_t>(transformed_normal.X()),
+                        static_cast<real_t>(transformed_normal.Y()),
+                        static_cast<real_t>(transformed_normal.Z())
+                    ));
+                }
+
+                if (has_uvs) {
+                    const gp_Pnt2d uv = triangulation->UVNode(node_index);
+                    uvs.push_back(Vector2(static_cast<real_t>(uv.X()), static_cast<real_t>(uv.Y())));
+                }
+            }
+
+            for (int triangle_index = 1; triangle_index <= triangulation->NbTriangles(); ++triangle_index) {
+                int n1 = 0;
+                int n2 = 0;
+                int n3 = 0;
+                triangulation->Triangle(triangle_index).Get(n1, n2, n3);
+
+                if (face.Orientation() == TopAbs_REVERSED) {
+                    std::swap(n2, n3);
+                }
+
+                indices.push_back(vertex_offset + (n1 - 1));
+                indices.push_back(vertex_offset + (n2 - 1));
+                indices.push_back(vertex_offset + (n3 - 1));
+            }
+
+            vertex_offset += triangulation->NbNodes();
+        }
+
+        ERR_FAIL_COND_V_MSG(vertices.is_empty() || indices.is_empty(), Ref<ArrayMesh>(), "OpenCASCADE could not triangulate the shape into a render mesh.");
+
+        Array arrays;
+        arrays.resize(Mesh::ARRAY_MAX);
+        arrays[Mesh::ARRAY_VERTEX] = vertices;
+        arrays[Mesh::ARRAY_INDEX] = indices;
+        if (!normals.is_empty()) {
+            arrays[Mesh::ARRAY_NORMAL] = normals;
+        }
+        if (!uvs.is_empty()) {
+            arrays[Mesh::ARRAY_TEX_UV] = uvs;
+        }
+
+        Ref<ArrayMesh> mesh;
+        mesh.instantiate();
+        mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
+        return mesh;
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<ArrayMesh>(), occt_utils::exception_to_string(failure));
+    }
 }
 
 void TopoShape::set_occt_shape(const TopoDS_Shape &p_shape) {
