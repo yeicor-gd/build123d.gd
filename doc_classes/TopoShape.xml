@@ -64,6 +64,27 @@
 				Returns a scaled copy of the shape around the specified center.
 			</description>
 		</method>
+		<method name="mirrored_about_point" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="center" type="Vector3" />
+			<description>
+				Returns a copy of the shape mirrored through the specified point.
+			</description>
+		</method>
+		<method name="mirrored_about_axis" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="axis" type="Axis" />
+			<description>
+				Returns a copy of the shape mirrored around the specified [Axis].
+			</description>
+		</method>
+		<method name="mirrored_about_plane" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="plane" type="CadPlane" />
+			<description>
+				Returns a copy of the shape mirrored across the specified [CadPlane].
+			</description>
+		</method>
 		<method name="located" qualifiers="const">
 			<return type="TopoShape" />
 			<param index="0" name="location" type="Location" />

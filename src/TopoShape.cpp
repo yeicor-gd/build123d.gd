@@ -1,9 +1,11 @@
 #include "TopoShape.h"
 
+#include "Axis.h"
 #include "Edge.h"
 #include "Face.h"
 #include "Location.h"
 #include "OCCTUtils.h"
+#include "Plane.h"
 #include "Solid.h"
 #include "Vertex.h"
 #include "Wire.h"
@@ -199,6 +201,9 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("translated", "offset"), &TopoShape::translated);
     ClassDB::bind_method(D_METHOD("rotated", "axis_origin", "axis_direction", "angle_radians"), &TopoShape::rotated);
     ClassDB::bind_method(D_METHOD("scaled", "center", "factor"), &TopoShape::scaled);
+    ClassDB::bind_method(D_METHOD("mirrored_about_point", "center"), &TopoShape::mirrored_about_point);
+    ClassDB::bind_method(D_METHOD("mirrored_about_axis", "axis"), &TopoShape::mirrored_about_axis);
+    ClassDB::bind_method(D_METHOD("mirrored_about_plane", "plane"), &TopoShape::mirrored_about_plane);
     ClassDB::bind_method(D_METHOD("located", "location"), &TopoShape::located);
     ClassDB::bind_method(D_METHOD("get_volume"), &TopoShape::get_volume);
     ClassDB::bind_method(D_METHOD("get_surface_area"), &TopoShape::get_surface_area);
@@ -325,6 +330,47 @@ Ref<TopoShape> TopoShape::scaled(const Vector3 &p_center, double p_factor) const
     try {
         gp_Trsf transform;
         transform.SetScale(occt_utils::to_occt_point(p_center), p_factor);
+        BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
+        return from_occt(transformer.Shape());
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<TopoShape> TopoShape::mirrored_about_point(const Vector3 &p_center) const {
+    ensure_shape_present(occt_shape, "TopoShape.mirrored_about_point requires a non-null shape.");
+
+    try {
+        gp_Trsf transform;
+        transform.SetMirror(occt_utils::to_occt_point(p_center));
+        BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
+        return from_occt(transformer.Shape());
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<TopoShape> TopoShape::mirrored_about_axis(const Ref<Axis> &p_axis) const {
+    ensure_shape_present(occt_shape, "TopoShape.mirrored_about_axis requires a non-null shape.");
+    ERR_FAIL_COND_V_MSG(p_axis.is_null(), Ref<TopoShape>(), "TopoShape.mirrored_about_axis requires a non-null axis.");
+
+    try {
+        gp_Trsf transform;
+        transform.SetMirror(p_axis->get_occt_axis());
+        BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
+        return from_occt(transformer.Shape());
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<TopoShape> TopoShape::mirrored_about_plane(const Ref<CadPlane> &p_plane) const {
+    ensure_shape_present(occt_shape, "TopoShape.mirrored_about_plane requires a non-null shape.");
+    ERR_FAIL_COND_V_MSG(p_plane.is_null(), Ref<TopoShape>(), "TopoShape.mirrored_about_plane requires a non-null plane.");
+
+    try {
+        gp_Trsf transform;
+        transform.SetMirror(p_plane->get_occt_plane().Position().Ax2());
         BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
         return from_occt(transformer.Shape());
     } catch (const Standard_Failure &failure) {

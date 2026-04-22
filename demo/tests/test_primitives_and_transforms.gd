@@ -92,4 +92,26 @@ static func test_shape_transforms() -> String:
 	if not _approx_vec(scaled.get_bounding_box_size(), Vector3(2.0, 4.0, 6.0), 0.02):
 		return "unexpected scaled bounds size: %s" % str(scaled.get_bounding_box_size())
 
+	var point_mirrored := box.mirrored_about_point(Vector3.ZERO)
+	if point_mirrored == null or point_mirrored.is_null():
+		return "point mirror returned null"
+	if not _approx_vec(point_mirrored.get_bounding_box_min(), Vector3(-1.0, -2.0, -3.0), 0.01):
+		return "unexpected point-mirrored bounds min: %s" % str(point_mirrored.get_bounding_box_min())
+
+	var axis := Axis.new()
+	axis.set_axis(Vector3.ZERO, Vector3.UP)
+	var axis_mirrored := box.mirrored_about_axis(axis)
+	if axis_mirrored == null or axis_mirrored.is_null():
+		return "axis mirror returned null"
+	if not _approx_vec(axis_mirrored.get_bounding_box_min(), Vector3(-1.0, 0.0, -3.0), 0.01):
+		return "unexpected axis-mirrored bounds min: %s" % str(axis_mirrored.get_bounding_box_min())
+
+	var plane := CadPlane.new()
+	plane.set_plane(Vector3.ZERO, Vector3.RIGHT, Vector3.FORWARD)
+	var plane_mirrored := box.mirrored_about_plane(plane)
+	if plane_mirrored == null or plane_mirrored.is_null():
+		return "plane mirror returned null"
+	if not _approx_vec(plane_mirrored.get_bounding_box_min(), Vector3(-1.0, 0.0, 0.0), 0.01):
+		return "unexpected plane-mirrored bounds min: %s" % str(plane_mirrored.get_bounding_box_min())
+
 	return ""

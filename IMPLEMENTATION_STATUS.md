@@ -111,6 +111,7 @@ Implemented in progress:
 - `Wire.extruded(direction, only_plane)` as a profile-to-solid convenience bridge
 - `Face.revolved(axis, angle_radians)` for first axis-driven rotational feature construction
 - `Wire.revolved(axis, angle_radians, only_plane)` as a profile-to-solid revolve convenience bridge
+- `TopoShape.mirrored_about_point()`, `mirrored_about_axis()`, and `mirrored_about_plane()` for helper-driven mirror transforms
 - `TopoShape.get_vertices()` and `TopoShape.get_edges()` for unique typed topology extraction
 - `TopoShape.get_wires()` for unique typed wire extraction
 - `TopoShape.get_faces()` for unique typed face extraction
@@ -142,13 +143,14 @@ Planned validation:
 - circular profile construction tests
 - linear extrusion tests from faces and wires
 - revolve tests from faces and wires
+- mirror transform tests from point, axis, and plane references
 - typed wrapper construction and inspection tests
 - placement and orientation tests
 
 ## Next Likely Slices
 
 - typed topology wrappers (`Vertex`, `Edge`, `Wire`, `Face`, `Solid`)
-- transforms (`translate`, `rotate`, `mirror`)
+- transforms (higher-level helper composition on top of translate/rotate/scale/mirror)
 - more 3D primitives (advanced wedge variants)
 - profile construction (`Line`, `Circle`, `Rectangle`, `Polygon`)
 - feature operations (`extrude`, `revolve`, `loft`, `sweep`)
