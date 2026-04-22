@@ -12,6 +12,9 @@
 #include "GeometryVector.h"
 #include "OpenCascadeVersion.h"
 #include "SolidBox.h"
+#include "SolidCone.h"
+#include "SolidCylinder.h"
+#include "SolidSphere.h"
 #include "TopoShape.h"
 
 using namespace godot;
@@ -26,6 +29,9 @@ void gdext_initialize_module(ModuleInitializationLevel p_level) {
     GDREGISTER_CLASS(OpenCascadeVersion);
     GDREGISTER_CLASS(TopoShape);
     GDREGISTER_CLASS(SolidBox);
+    GDREGISTER_CLASS(SolidCone);
+    GDREGISTER_CLASS(SolidCylinder);
+    GDREGISTER_CLASS(SolidSphere);
 }
 
 void gdext_uninitialize_module(ModuleInitializationLevel p_level) {

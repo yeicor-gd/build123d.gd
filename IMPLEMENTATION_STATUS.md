@@ -34,7 +34,7 @@ Validation status:
 
 - `GODOT_VERSION=system ./validate.sh /tmp/errors.log >/tmp/verbose_output.log` passes
 
-## Next In Progress
+## Completed
 
 ### Slice 2: Interchange and Mesh Conversion
 
@@ -56,6 +56,50 @@ Planned validation:
 - STEP file/byte round-trip tests
 - STL file/byte round-trip tests
 - mesh AABB and surface generation tests
+
+Validation status:
+
+- `GODOT_VERSION=system ./validate.sh /tmp/errors.log >/tmp/verbose_output.log` passes
+
+## Completed
+
+### Slice 3: More Solids and Basic Transforms
+
+Goal: keep extending the low-level modeling surface with reusable primitives and shape transforms.
+
+Implemented:
+
+- `TopoShape.translated()`
+- `TopoShape.rotated()`
+- `TopoShape.scaled()`
+- `SolidCylinder`
+- `SolidSphere`
+- `SolidCone`
+
+Planned validation:
+
+- primitive volume and bounding-box tests
+- transform invariants and transformed bounds tests
+
+Validation status:
+
+- `GODOT_VERSION=system ./validate.sh /tmp/errors.log >/tmp/verbose_output.log` passes
+
+## Next In Progress
+
+### Slice 4: Typed Topology and Placement Helpers
+
+Goal: move toward build123d’s richer modeling API with typed topology wrappers and placement/orientation helpers.
+
+Planned classes:
+
+- `Vertex`, `Edge`, `Wire`, `Face`, `Solid`
+- `Axis`, `Plane`, `Location`
+
+Planned validation:
+
+- typed wrapper construction and inspection tests
+- placement and orientation tests
 
 ## Next Likely Slices
 

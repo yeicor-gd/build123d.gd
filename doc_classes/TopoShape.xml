@@ -40,6 +40,30 @@
 				Returns the intersection between this shape and [param other].
 			</description>
 		</method>
+		<method name="translated" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="offset" type="Vector3" />
+			<description>
+				Returns a translated copy of the shape.
+			</description>
+		</method>
+		<method name="rotated" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="axis_origin" type="Vector3" />
+			<param index="1" name="axis_direction" type="Vector3" />
+			<param index="2" name="angle_radians" type="float" />
+			<description>
+				Returns a rotated copy of the shape around the specified axis.
+			</description>
+		</method>
+		<method name="scaled" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="center" type="Vector3" />
+			<param index="1" name="factor" type="float" />
+			<description>
+				Returns a scaled copy of the shape around the specified center.
+			</description>
+		</method>
 		<method name="get_volume" qualifiers="const">
 			<return type="float" />
 			<description>

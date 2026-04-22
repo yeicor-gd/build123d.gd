@@ -14,6 +14,7 @@
 #include <BRepAlgoAPI_Common.hxx>
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
+#include <BRepBuilderAPI_Transform.hxx>
 #include <Message.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepBuilderAPI_Copy.hxx>
@@ -33,6 +34,9 @@
 #include <TopExp_Explorer.hxx>
 #include <TopLoc_Location.hxx>
 #include <TopoDS.hxx>
+#include <gp_Ax1.hxx>
+#include <gp_Dir.hxx>
+#include <gp_Trsf.hxx>
 
 #include <fstream>
 #include <ios>
@@ -165,6 +169,9 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("fuse", "other"), &TopoShape::fuse);
     ClassDB::bind_method(D_METHOD("cut", "other"), &TopoShape::cut);
     ClassDB::bind_method(D_METHOD("common", "other"), &TopoShape::common);
+    ClassDB::bind_method(D_METHOD("translated", "offset"), &TopoShape::translated);
+    ClassDB::bind_method(D_METHOD("rotated", "axis_origin", "axis_direction", "angle_radians"), &TopoShape::rotated);
+    ClassDB::bind_method(D_METHOD("scaled", "center", "factor"), &TopoShape::scaled);
     ClassDB::bind_method(D_METHOD("get_volume"), &TopoShape::get_volume);
     ClassDB::bind_method(D_METHOD("get_surface_area"), &TopoShape::get_surface_area);
     ClassDB::bind_method(D_METHOD("get_center_of_mass"), &TopoShape::get_center_of_mass);
@@ -234,6 +241,57 @@ Ref<TopoShape> TopoShape::common(const Ref<TopoShape> &p_other) const {
 
     try {
         return do_boolean_operation<BRepAlgoAPI_Common>(occt_shape, p_other->occt_shape);
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<TopoShape> TopoShape::translated(const Vector3 &p_offset) const {
+    ensure_shape_present(occt_shape, "TopoShape.translated requires a non-null shape.");
+
+    try {
+        gp_Trsf transform;
+        transform.SetTranslation(occt_utils::to_occt_vec(p_offset));
+        BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
+        return from_occt(transformer.Shape());
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<TopoShape> TopoShape::rotated(const Vector3 &p_axis_origin, const Vector3 &p_axis_direction, double p_angle_radians) const {
+    ensure_shape_present(occt_shape, "TopoShape.rotated requires a non-null shape.");
+    ERR_FAIL_COND_V_MSG(p_axis_direction.length() == 0.0, Ref<TopoShape>(), "TopoShape.rotated requires a non-zero axis direction.");
+
+    try {
+        gp_Trsf transform;
+        transform.SetRotation(
+            gp_Ax1(
+                occt_utils::to_occt_point(p_axis_origin),
+                gp_Dir(
+                    static_cast<double>(p_axis_direction.x),
+                    static_cast<double>(p_axis_direction.y),
+                    static_cast<double>(p_axis_direction.z)
+                )
+            ),
+            p_angle_radians
+        );
+        BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
+        return from_occt(transformer.Shape());
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<TopoShape> TopoShape::scaled(const Vector3 &p_center, double p_factor) const {
+    ensure_shape_present(occt_shape, "TopoShape.scaled requires a non-null shape.");
+    ERR_FAIL_COND_V_MSG(p_factor == 0.0, Ref<TopoShape>(), "TopoShape.scaled requires a non-zero scale factor.");
+
+    try {
+        gp_Trsf transform;
+        transform.SetScale(occt_utils::to_occt_point(p_center), p_factor);
+        BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
+        return from_occt(transformer.Shape());
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
     }
