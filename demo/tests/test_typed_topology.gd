@@ -145,6 +145,18 @@ static func test_toposhape_typed_extraction() -> String:
 	if face.get_outer_wire() == null:
 		return "typed face did not expose an outer wire"
 
+	var shells := box.get_shells()
+	if shells.size() != 1:
+		return "expected 1 typed shell but got %s" % shells.size()
+	if not shells[0] is Shell:
+		return "first typed shell was not a Shell instance"
+
+	var shell: Shell = shells[0]
+	if not shell.is_closed():
+		return "typed shell was not closed"
+	if shell.get_face_count() != 6:
+		return "typed shell had unexpected face count: %s" % shell.get_face_count()
+
 	var solids := box.get_solids()
 	if solids.size() != 1:
 		return "expected 1 typed solid but got %s" % solids.size()

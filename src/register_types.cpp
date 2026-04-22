@@ -18,6 +18,7 @@
 #include "OpenCascadeVersion.h"
 #include "Plane.h"
 #include "RectangleWire.h"
+#include "Shell.h"
 #include "Solid.h"
 #include "SolidBox.h"
 #include "SolidCone.h"
@@ -46,6 +47,7 @@ void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
     GDREGISTER_CLASS(Edge);
     GDREGISTER_CLASS(Face);
     GDREGISTER_CLASS(RectangleWire);
+    GDREGISTER_CLASS(Shell);
     GDREGISTER_CLASS(Solid);
     GDREGISTER_CLASS(SolidBox);
     GDREGISTER_CLASS(SolidCone);

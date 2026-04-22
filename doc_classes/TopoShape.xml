@@ -152,6 +152,12 @@
 				Returns unique topological faces as [Face] wrappers.
 			</description>
 		</method>
+		<method name="get_shells" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns unique topological shells as [Shell] wrappers.
+			</description>
+		</method>
 		<method name="get_solids" qualifiers="const">
 			<return type="Array" />
 			<description>

@@ -101,6 +101,7 @@ Implemented in progress:
 - `Edge` wrapper with line construction, endpoint inspection, length, and polyline sampling
 - `Wire` wrapper with polygon construction, closure/length inspection, ordered edge traversal, and stitched polyline extraction
 - `Face` wrapper with wire/polygon construction, planarity checks, outer-wire extraction, and representative normal access
+- `Shell` wrapper with closure and face-count inspection
 - `Solid` wrapper with closure and shell-count inspection, now serving as the common base for solid primitives
 - `Axis` helper backed by `gp_Ax1`
 - `CadPlane` helper backed by `gp_Pln` to avoid colliding with Godot's built-in `Plane` type
@@ -117,6 +118,7 @@ Implemented in progress:
 - `TopoShape.get_vertices()` and `TopoShape.get_edges()` for unique typed topology extraction
 - `TopoShape.get_wires()` for unique typed wire extraction
 - `TopoShape.get_faces()` for unique typed face extraction
+- `TopoShape.get_shells()` for unique typed shell extraction
 - `TopoShape.get_solids()` for unique typed solid extraction
 - `TopoShape.get_vertex_positions()` for direct point extraction from topological vertices
 - `TopoShape.get_edge_polylines(deflection)` for direct edge sampling without forcing mesh conversion
@@ -130,7 +132,7 @@ Why this slice starts here:
 
 Planned classes:
 
-- `Vertex`, `Edge`, `Wire`, `Face`, `Solid`
+- `Vertex`, `Edge`, `Wire`, `Face`, `Shell`, `Solid`
 - `Axis`, `Plane`, `Location`
 
 Planned validation:
@@ -138,6 +140,7 @@ Planned validation:
 - topology extraction tests for vertices and edges
 - wire construction and wire extraction tests
 - face construction and face extraction tests
+- shell extraction and shell-wrapper tests
 - solid extraction and solid-wrapper tests
 - axis/location construction and transform tests
 - plane construction, projection, and transform tests
