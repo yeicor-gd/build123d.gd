@@ -1,4 +1,4 @@
-[ ] Axis(*args, **kwargs)
+[-] Axis(*args, **kwargs)
 [ ] Axis.**copy**() -> Axis
 [ ] Axis.**deepcopy**(_memo) -> Axis
 [ ] Axis.**neg**() -> Axis

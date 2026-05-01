@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Axis" inherits="RefCounted">
+    <brief_description>
+        A 3D axis defined by an origin point and a direction vector.
+    </brief_description>
+    <description>
+        Axis represents a 3D axis in space, defined by an origin point (position) and a direction vector.
+        It is commonly used to define rotation axes, symmetry axes, and for geometric computations.
+        The underlying OpenCASCADE type is gp_Ax1.
+    </description>
+    <methods>
+        <method name="create_from_origin_dir" qualifiers="static">
+            <return type="Axis" />
+            <argument index="0" name="origin" type="Vector3">
+                The origin point of the axis.
+            </argument>
+            <argument index="1" name="direction" type="Vector3">
+                The direction vector of the axis (will be normalized).
+            </argument>
+            <description>
+                Creates a new Axis from an origin point and direction vector.
+            </description>
+        </method>
+        <method name="create_from_gp_ax1" qualifiers="static">
+            <return type="Axis" />
+            <argument index="0" name="data" type="PackedByteArray">
+                Raw byte array containing gp_Ax1 data.
+            </argument>
+            <description>
+                Creates a new Axis from raw gp_Ax1 data.
+            </description>
+        </method>
+        <method name="get_position">
+            <return type="Vector3" />
+            <description>
+                Returns the origin point of the axis.
+            </description>
+        </method>
+        <method name="set_position">
+            <return type="void" />
+            <argument index="0" name="pos" type="Vector3">
+                The new origin point.
+            </argument>
+            <description>
+                Sets the origin point of the axis.
+            </description>
+        </method>
+        <method name="get_direction">
+            <return type="Vector3" />
+            <description>
+                Returns the direction vector of the axis (normalized).
+            </description>
+        </method>
+        <method name="set_direction">
+            <return type="void" />
+            <argument index="0" name="dir" type="Vector3">
+                The new direction vector (will be normalized).
+            </argument>
+            <description>
+                Sets the direction vector of the axis.
+            </description>
+        </method>
+        <method name="get_location">
+            <return type="Variant" />
+            <description>
+                Returns a Location object representing this axis.
+                Note: Full implementation depends on Location class.
+            </description>
+        </method>
+        <method name="angle_between">
+            <return type="float" />
+            <argument index="0" name="other" type="Axis">
+                The other axis to measure angle against.
+            </argument>
+            <description>
+                Returns the angle in degrees between this axis and another axis.
+                The angle is in the range [0, 180].
+            </description>
+        </method>
+        <method name="is_coaxial">
+            <return type="bool" />
+            <argument index="0" name="other" type="Axis">
+                The other axis to check.
+            </argument>
+            <argument index="1" name="angular_tolerance" type="float" default="1e-5">
+                Angular tolerance in radians.
+            </argument>
+            <argument index="2" name="linear_tolerance" type="float" default="1e-5">
+                Linear tolerance for position comparison.
+            </argument>
+            <description>
+                Returns true if this axis and another are coaxial (parallel and sharing same line).
+            </description>
+        </method>
+        <method name="is_normal">
+            <return type="bool" />
+            <argument index="0" name="other" type="Axis">
+                The other axis to check.
+            </argument>
+            <argument index="1" name="angular_tolerance" type="float" default="1e-5">
+                Angular tolerance in radians.
+            </argument>
+            <description>
+                Returns true if this axis and another are normal (90 degrees apart).
+            </description>
+        </method>
+        <method name="is_opposite">
+            <return type="bool" />
+            <argument index="0" name="other" type="Axis">
+                The other axis to check.
+            </argument>
+            <argument index="1" name="angular_tolerance" type="float" default="1e-5">
+                Angular tolerance in radians.
+            </argument>
+            <description>
+                Returns true if this axis and another are opposite (180 degrees apart).
+            </description>
+        </method>
+        <method name="is_parallel">
+            <return type="bool" />
+            <argument index="0" name="other" type="Axis">
+                The other axis to check.
+            </argument>
+            <argument index="1" name="angular_tolerance" type="float" default="1e-5">
+                Angular tolerance in radians.
+            </argument>
+            <description>
+                Returns true if this axis and another are parallel (0 or 180 degrees apart).
+            </description>
+        </method>
+        <method name="is_skew">
+            <return type="bool" />
+            <argument index="0" name="other" type="Axis">
+                The other axis to check.
+            </argument>
+            <argument index="1" name="tolerance" type="float" default="1e-5">
+                Tolerance for the check.
+            </argument>
+            <description>
+                Returns true if this axis and another are skew (not parallel and not intersecting).
+            </description>
+        </method>
+        <method name="reverse">
+            <return type="Axis" />
+            <description>
+                Returns a new axis with the same position but reversed direction.
+            </description>
+        </method>
+        <method name="neg">
+            <return type="Axis" />
+            <description>
+                Returns a new axis with the same position but reversed direction (same as reverse).
+            </description>
+        </method>
+        <method name="copy">
+            <return type="Axis" />
+            <description>
+                Returns a shallow copy of this axis.
+            </description>
+        </method>
+        <method name="located">
+            <return type="Axis" />
+            <argument index="0" name="location" type="Variant">
+                A Location object to transform by.
+            </argument>
+            <description>
+                Returns a new axis transformed by the given Location.
+                Note: Full implementation depends on Location class.
+            </description>
+        </method>
+        <method name="to_plane">
+            <return type="Variant" />
+            <description>
+                Converts this axis to a Plane.
+                Note: Full implementation depends on Plane class.
+            </description>
+        </method>
+        <method name="intersect">
+            <return type="Variant" />
+            <argument index="0" name="other" type="Variant">
+                Another object to intersect with (Axis, Plane, Vector, etc.).
+            </argument>
+            <description>
+                Returns the intersection with another object.
+                Note: Full implementation depends on other geometry classes.
+            </description>
+        </method>
+    </methods>
+    <members>
+        <member name="position" type="Vector3" setter="set_position" getter="get_position">
+            The origin point of the axis.
+        </member>
+        <member name="direction" type="Vector3" setter="set_direction" getter="get_direction">
+            The direction vector of the axis (normalized).
+        </member>
+        <member name="location" type="Variant" getter="get_location">
+            A Location object representing this axis. Read-only.
+        </member>
+    </members>
+</class>
