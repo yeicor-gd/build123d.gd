@@ -91,3 +91,22 @@ func test_axis_deepcopy() -> String:
 		return position_error
 
 	return _assert_vec3_close(copied.direction, original.direction, "direction")
+
+
+func test_axis_neg() -> String:
+	var original := Axis.create(Vector3(1, 2, 3), Vector3(2, 0, 0))
+	if original == null:
+		return "Failed to create original axis"
+
+	var negated := original.neg()
+	if negated == null:
+		return "Axis.neg returned null"
+
+	if negated == original:
+		return "Axis.neg should return a distinct instance"
+
+	var position_error := _assert_vec3_close(negated.position, original.position, "position")
+	if position_error != "":
+		return position_error
+
+	return _assert_vec3_close(negated.direction, Vector3(-1, 0, 0), "direction")

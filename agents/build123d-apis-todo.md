@@ -1,7 +1,7 @@
 [x] completed Axis(*args, **kwargs)
 [x] completed Axis.**copy**() -> Axis
 [x] completed Axis.**deepcopy**(_memo) -> Axis
-[ ] Axis.**neg**() -> Axis
+[x] completed Axis.**neg**() -> Axis
 [ ] Axis.angle_between(other: Axis) -> float
 [ ] Axis.direction: unknown
 [ ] Axis.intersect(*args, **kwargs)
