@@ -10,6 +10,7 @@
 
 // Include headers for all detected classes
 #include "build123d/axis.h"
+#include "build123d/bound_box.h"
 void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
     if (p_level != godot::MODULE_INITIALIZATION_LEVEL_SCENE) {
         return;
@@ -17,6 +18,7 @@ void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
 
     // Register all discovered wrapper classes
     GDREGISTER_CLASS(Axis);
+    GDREGISTER_CLASS(BoundBox);
 }
 
 void gdext_uninitialize_module(godot::ModuleInitializationLevel p_level) {

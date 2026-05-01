@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="BoundBox" inherits="RefCounted">
+    <brief_description>
+        A bounding box for 3D shapes.
+    </brief_description>
+    <description>
+        BoundBox represents a 3D bounding box that encloses a shape or set of points.
+        It is constructed from a TopoDS_Shape using OpenCASCADE's Bnd_Box class.
+        The box is defined by minimum and maximum corner points.
+    </description>
+    <methods>
+        <method name="create_from_bnd_box" qualifiers="static">
+            <return type="BoundBox" />
+            <argument index="0" name="data" type="PackedByteArray">
+                Raw byte array containing Bnd_Box data.
+            </argument>
+            <description>
+                Creates a new BoundBox from raw Bnd_Box data.
+            </description>
+        </method>
+        <method name="create_from_shape" qualifiers="static">
+            <return type="BoundBox" />
+            <argument index="0" name="shape" type="Variant">
+                A Shape object to compute the bounding box from.
+            </argument>
+            <argument index="1" name="tolerance" type="float" default="-1.0">
+                Tolerance for the bounding box computation.
+            </argument>
+            <argument index="2" name="optimal" type="bool" default="true">
+                If true, uses optimal bounding box algorithm.
+            </argument>
+            <description>
+                Creates a new BoundBox from a Shape.
+                Note: Full implementation depends on Shape class.
+            </description>
+        </method>
+        <method name="add_point">
+            <return type="void" />
+            <argument index="0" name="point" type="Vector3">
+                A point to add to the bounding box.
+            </argument>
+            <argument index="1" name="tolerance" type="float" default="-1.0">
+                Tolerance for the point addition.
+            </argument>
+            <description>
+                Adds a point to the bounding box, expanding it if necessary.
+            </description>
+        </method>
+        <method name="add_box">
+            <return type="void" />
+            <argument index="0" name="other" type="BoundBox">
+                Another bounding box to add.
+            </argument>
+            <description>
+                Adds another bounding box to this one, expanding to encompass both.
+            </description>
+        </method>
+        <method name="center">
+            <return type="Vector3" />
+            <description>
+                Returns the center point of the bounding box.
+            </description>
+        </method>
+        <method name="is_inside">
+            <return type="bool" />
+            <argument index="0" name="other" type="BoundBox">
+                Another bounding box to check.
+            </argument>
+            <description>
+                Returns true if the other bounding box is entirely inside this one.
+            </description>
+        </method>
+        <method name="overlaps">
+            <return type="bool" />
+            <argument index="0" name="other" type="BoundBox">
+                Another bounding box to check.
+            </argument>
+            <argument index="1" name="tolerance" type="float" default="1e-6">
+                Tolerance for overlap check.
+            </argument>
+            <description>
+                Returns true if this bounding box overlaps with another.
+            </description>
+        </method>
+        <method name="to_align_offset">
+            <return type="Vector3" />
+            <argument index="0" name="align" type="Variant">
+                Alignment specification (Align enum or tuple).
+            </argument>
+            <description>
+                Returns the offset for aligning objects based on this bounding box.
+                Note: Full implementation depends on Align enum.
+            </description>
+        </method>
+        <method name="get_measure">
+            <return type="float" />
+            <description>
+                Returns the measure of the bounding box.
+                For 3D: volume, for 2D: area, for 1D: length.
+            </description>
+        </method>
+        <method name="get_diagonal">
+            <return type="float" />
+            <description>
+                Returns the length of the body diagonal (maximum size).
+            </description>
+        </method>
+    </methods>
+    <members>
+        <member name="min" type="Vector3" getter="get_min">
+            The minimum corner point of the bounding box.
+        </member>
+        <member name="max" type="Vector3" getter="get_max">
+            The maximum corner point of the bounding box.
+        </member>
+        <member name="size" type="Vector3" getter="get_size">
+            The size of the bounding box (max - min).
+        </member>
+    </members>
+</class>

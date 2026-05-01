@@ -15,16 +15,16 @@
 [x] Axis.position: unknown
 [x] Axis.reverse() -> Axis
 [x] Axis.to_plane() -> Plane
-[-] BoundBox(*args, **kwargs)
-[ ] BoundBox.add(obj: tuple[float, float, float] | Vector | BoundBox, tol: float | None = None) -> BoundBox
-[ ] BoundBox.center() -> Vector
-[ ] BoundBox.diagonal: unknown
+[x] BoundBox(*args, **kwargs)
+[x] BoundBox.add(obj: tuple[float, float, float] | Vector | BoundBox, tol: float | None = None) -> BoundBox
+[x] BoundBox.center() -> Vector
+[x] BoundBox.diagonal: unknown
 [ ] BoundBox.find_outside_box_2d(bb1: BoundBox, bb2: BoundBox) -> BoundBox | None
 [ ] BoundBox.from_topo_ds(shape: TopoDS_Shape, tolerance: float | None = None, optimal: bool = True) -> BoundBox
-[ ] BoundBox.is_inside(second_box: BoundBox) -> bool
-[ ] BoundBox.measure: unknown
-[ ] BoundBox.overlaps(other: BoundBox, tolerance: float = 1e-06) -> bool
-[ ] BoundBox.to_align_offset(align: Align | None | tuple[Align | None, Align | None] | tuple[Align | None, Align | None, Align | None]) -> Vector
+[x] BoundBox.is_inside(second_box: BoundBox) -> bool
+[x] BoundBox.measure: unknown
+[x] BoundBox.overlaps(other: BoundBox, tolerance: float = 1e-06) -> bool
+[x] BoundBox.to_align_offset(align: Align | None | tuple[Align | None, Align | None] | tuple[Align | None, Align | None, Align | None]) -> Vector
 [ ] Color(*args, **kwargs)
 [ ] Color.**copy**() -> Color
 [ ] Color.**deepcopy**(_memo) -> Color
