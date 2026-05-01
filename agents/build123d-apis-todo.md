@@ -1,21 +1,21 @@
 [x] Axis(*args, **kwargs)
 [x] Axis.**copy**() -> Axis
 [x] Axis.**deepcopy**(_memo) -> Axis
-[-] Axis.**neg**() -> Axis
+[x] Axis.**neg**() -> Axis
 [x] Axis.angle_between(other: Axis) -> float
-[-] Axis.direction: unknown
+[x] Axis.direction: unknown
 [x] Axis.intersect(*args, **kwargs)
-[ ] Axis.is_coaxial(other: Axis, angular_tolerance: float = 1e-05, linear_tolerance: float = 1e-05) -> bool
-[ ] Axis.is_normal(other: Axis, angular_tolerance: float = 1e-05) -> bool
-[ ] Axis.is_opposite(other: Axis, angular_tolerance: float = 1e-05) -> bool
-[ ] Axis.is_parallel(other: Axis, angular_tolerance: float = 1e-05) -> bool
-[ ] Axis.is_skew(other: Axis, tolerance: float = 1e-05) -> bool
-[ ] Axis.located(new_location: Location)
-[ ] Axis.location: unknown
-[ ] Axis.position: unknown
-[ ] Axis.reverse() -> Axis
-[ ] Axis.to_plane() -> Plane
-[ ] BoundBox(*args, **kwargs)
+[x] Axis.is_coaxial(other: Axis, angular_tolerance: float = 1e-05, linear_tolerance: float = 1e-05) -> bool
+[x] Axis.is_normal(other: Axis, angular_tolerance: float = 1e-05) -> bool
+[x] Axis.is_opposite(other: Axis, angular_tolerance: float = 1e-05) -> bool
+[x] Axis.is_parallel(other: Axis, angular_tolerance: float = 1e-05) -> bool
+[x] Axis.is_skew(other: Axis, tolerance: float = 1e-05) -> bool
+[x] Axis.located(new_location: Location)
+[x] Axis.location: unknown
+[x] Axis.position: unknown
+[x] Axis.reverse() -> Axis
+[x] Axis.to_plane() -> Plane
+[-] BoundBox(*args, **kwargs)
 [ ] BoundBox.add(obj: tuple[float, float, float] | Vector | BoundBox, tol: float | None = None) -> BoundBox
 [ ] BoundBox.center() -> Vector
 [ ] BoundBox.diagonal: unknown
