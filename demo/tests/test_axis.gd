@@ -53,3 +53,22 @@ func test_axis_rejects_zero_direction() -> String:
 	if axis != null:
 		return "Axis.create should reject a zero direction"
 	return ""
+
+
+func test_axis_copy() -> String:
+	var original := Axis.create(Vector3(1, 2, 3), Vector3(4, 0, 0))
+	if original == null:
+		return "Failed to create original axis"
+
+	var copied := original.copy()
+	if copied == null:
+		return "Axis.copy returned null"
+
+	if copied == original:
+		return "Axis.copy should return a distinct instance"
+
+	var position_error := _assert_vec3_close(copied.position, original.position, "position")
+	if position_error != "":
+		return position_error
+
+	return _assert_vec3_close(copied.direction, original.direction, "direction")

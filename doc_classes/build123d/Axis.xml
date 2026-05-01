@@ -36,6 +36,13 @@
 				Creates an axis by transforming the global positive Z axis by [param location].
 			</description>
 		</method>
+		<method name="copy">
+			<return type="Axis">
+			</return>
+			<description>
+				Returns a new [Axis] with the same [member position] and [member direction].
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="position" type="Vector3" setter="set_position" getter="get_position">

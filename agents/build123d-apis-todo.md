@@ -1,5 +1,5 @@
 [x] completed Axis(*args, **kwargs)
-[ ] Axis.**copy**() -> Axis
+[x] completed Axis.**copy**() -> Axis
 [ ] Axis.**deepcopy**(_memo) -> Axis
 [ ] Axis.**neg**() -> Axis
 [ ] Axis.angle_between(other: Axis) -> float

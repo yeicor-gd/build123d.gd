@@ -30,6 +30,8 @@ public:
     static godot::Ref<Axis> from_edge(const godot::Ref<Edge> &p_edge);
     static godot::Ref<Axis> from_location(const godot::Ref<Location> &p_location);
 
+    godot::Ref<Axis> copy() const;
+
     void set_position(const godot::Vector3 &p_position);
     godot::Vector3 get_position() const;
 

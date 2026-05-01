@@ -16,6 +16,7 @@ void Axis::_bind_methods() {
     ClassDB::bind_static_method("Axis", D_METHOD("create", "origin", "direction"), &Axis::create);
     ClassDB::bind_static_method("Axis", D_METHOD("from_edge", "edge"), &Axis::from_edge);
     ClassDB::bind_static_method("Axis", D_METHOD("from_location", "location"), &Axis::from_location);
+    ClassDB::bind_method(D_METHOD("copy"), &Axis::copy);
 
     ClassDB::bind_method(D_METHOD("set_position", "position"), &Axis::set_position);
     ClassDB::bind_method(D_METHOD("get_position"), &Axis::get_position);
@@ -78,6 +79,10 @@ Ref<Axis> Axis::from_location(const Ref<Location> &p_location) {
 
     const gp_Ax1 base_axis(gp_Pnt(0.0, 0.0, 0.0), gp_Dir(0.0, 0.0, 1.0));
     return create_from_gp_ax1(base_axis.Transformed(p_location->get_wrapped().Transformation()));
+}
+
+Ref<Axis> Axis::copy() const {
+    return create_from_gp_ax1(wrapped);
 }
 
 void Axis::set_position(const Vector3 &p_position) {
