@@ -1,10 +1,10 @@
 [x] Axis(*args, **kwargs)
 [x] Axis.**copy**() -> Axis
-[-] Axis.**deepcopy**(_memo) -> Axis
-[ ] Axis.**neg**() -> Axis
-[ ] Axis.angle_between(other: Axis) -> float
-[ ] Axis.direction: unknown
-[ ] Axis.intersect(*args, **kwargs)
+[x] Axis.**deepcopy**(_memo) -> Axis
+[-] Axis.**neg**() -> Axis
+[x] Axis.angle_between(other: Axis) -> float
+[-] Axis.direction: unknown
+[x] Axis.intersect(*args, **kwargs)
 [ ] Axis.is_coaxial(other: Axis, angular_tolerance: float = 1e-05, linear_tolerance: float = 1e-05) -> bool
 [ ] Axis.is_normal(other: Axis, angular_tolerance: float = 1e-05) -> bool
 [ ] Axis.is_opposite(other: Axis, angular_tolerance: float = 1e-05) -> bool

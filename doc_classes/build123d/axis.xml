@@ -185,6 +185,19 @@
         <method name="intersect">
             <return type="Variant" />
             <argument index="0" name="other" type="Variant">
+                Another object to intersect with (Axis, Plane, Vector, Location, or Shape).
+            </argument>
+            <description>
+                Returns the intersection with another geometric object.
+                - If intersecting with another Axis:
+                  - Returns the Axis itself if they are coaxial (same line).
+                  - Returns null if they are parallel but not coaxial, or skew.
+                - Other types (Vector, Plane, Location, Shape) are not yet implemented.
+            </description>
+        </method>
+        <method name="intersect">
+            <return type="Variant" />
+            <argument index="0" name="other" type="Variant">
                 Another object to intersect with (Axis, Plane, Vector, etc.).
             </argument>
             <description>

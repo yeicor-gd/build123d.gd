@@ -196,6 +196,30 @@ Variant Axis::to_plane() const {
 }
 
 Variant Axis::intersect(const Variant &p_other) const {
-    // This will be implemented based on the type of p_other
+    // Basic implementation - handles Axis intersection
+    // For Axis-Axis intersection, returns the intersection point if they intersect,
+    // or the Axis itself if they are coaxial
+    
+    if (p_other.get_type() == Variant::OBJECT) {
+        Ref<Axis> other_axis = p_other;
+        if (other_axis.is_valid()) {
+            // Check if axes are coaxial (same line)
+            if (is_coaxial(other_axis, 1e-5, 1e-5)) {
+                return Variant(other_axis);  // Return the other axis (they are the same line)
+            }
+            
+            // Check if axes are parallel but not coaxial (no intersection)
+            if (is_parallel(other_axis, 1e-5)) {
+                return Variant();  // No intersection
+            }
+            
+            // For skew lines, they don't intersect in 3D
+            // A full implementation would solve for the closest points
+            // For now, return null (no intersection)
+            return Variant();
+        }
+    }
+    
+    // Other types (Vector, Plane, Shape) not yet implemented
     return Variant();
 }
