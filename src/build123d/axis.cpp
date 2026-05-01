@@ -17,6 +17,7 @@ void Axis::_bind_methods() {
     ClassDB::bind_static_method("Axis", D_METHOD("from_edge", "edge"), &Axis::from_edge);
     ClassDB::bind_static_method("Axis", D_METHOD("from_location", "location"), &Axis::from_location);
     ClassDB::bind_method(D_METHOD("copy"), &Axis::copy);
+    ClassDB::bind_method(D_METHOD("deepcopy", "memo"), &Axis::deepcopy);
 
     ClassDB::bind_method(D_METHOD("set_position", "position"), &Axis::set_position);
     ClassDB::bind_method(D_METHOD("get_position"), &Axis::get_position);
@@ -82,6 +83,11 @@ Ref<Axis> Axis::from_location(const Ref<Location> &p_location) {
 }
 
 Ref<Axis> Axis::copy() const {
+    return create_from_gp_ax1(wrapped);
+}
+
+Ref<Axis> Axis::deepcopy(const Variant &p_memo) const {
+    (void)p_memo;
     return create_from_gp_ax1(wrapped);
 }
 

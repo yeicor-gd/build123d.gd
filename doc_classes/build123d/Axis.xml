@@ -43,6 +43,15 @@
 				Returns a new [Axis] with the same [member position] and [member direction].
 			</description>
 		</method>
+		<method name="deepcopy">
+			<return type="Axis">
+			</return>
+			<argument index="0" name="memo" type="Variant">
+			</argument>
+			<description>
+				Returns a new [Axis] with the same [member position] and [member direction]. The [param memo] argument is accepted for API compatibility.
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="position" type="Vector3" setter="set_position" getter="get_position">

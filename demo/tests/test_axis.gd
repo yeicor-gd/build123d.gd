@@ -72,3 +72,22 @@ func test_axis_copy() -> String:
 		return position_error
 
 	return _assert_vec3_close(copied.direction, original.direction, "direction")
+
+
+func test_axis_deepcopy() -> String:
+	var original := Axis.create(Vector3(5, 6, 7), Vector3(0, 3, 0))
+	if original == null:
+		return "Failed to create original axis"
+
+	var copied := original.deepcopy({})
+	if copied == null:
+		return "Axis.deepcopy returned null"
+
+	if copied == original:
+		return "Axis.deepcopy should return a distinct instance"
+
+	var position_error := _assert_vec3_close(copied.position, original.position, "position")
+	if position_error != "":
+		return position_error
+
+	return _assert_vec3_close(copied.direction, original.direction, "direction")

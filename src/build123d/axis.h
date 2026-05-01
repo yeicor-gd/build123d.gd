@@ -31,6 +31,7 @@ public:
     static godot::Ref<Axis> from_location(const godot::Ref<Location> &p_location);
 
     godot::Ref<Axis> copy() const;
+    godot::Ref<Axis> deepcopy(const godot::Variant &p_memo) const;
 
     void set_position(const godot::Vector3 &p_position);
     godot::Vector3 get_position() const;
