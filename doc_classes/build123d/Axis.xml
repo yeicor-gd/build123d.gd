@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Axis" inherits="RefCounted" version="4.3">
+	<brief_description>
+		An infinite 3D axis defined by an origin and a direction.
+	</brief_description>
+	<description>
+		[Axis] wraps OpenCASCADE's [code]gp_Ax1[/code]. Use the static factory methods to create an axis from an origin and direction vector, a [Location], or a linear [Edge]. The [member direction] value is always normalized by OpenCASCADE.
+	</description>
+	<methods>
+		<method name="create" qualifiers="static">
+			<return type="Axis">
+			</return>
+			<argument index="0" name="origin" type="Vector3">
+			</argument>
+			<argument index="1" name="direction" type="Vector3">
+			</argument>
+			<description>
+				Creates an axis from [param origin] and [param direction]. The direction must be non-zero.
+			</description>
+		</method>
+		<method name="from_edge" qualifiers="static">
+			<return type="Axis">
+			</return>
+			<argument index="0" name="edge" type="Edge">
+			</argument>
+			<description>
+				Creates an axis from the start point and tangent of [param edge]. The edge must have a valid 3D curve.
+			</description>
+		</method>
+		<method name="from_location" qualifiers="static">
+			<return type="Axis">
+			</return>
+			<argument index="0" name="location" type="Location">
+			</argument>
+			<description>
+				Creates an axis by transforming the global positive Z axis by [param location].
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="position" type="Vector3" setter="set_position" getter="get_position">
+			The axis origin in world coordinates.
+		</member>
+		<member name="direction" type="Vector3" setter="set_direction" getter="get_direction">
+			The normalized axis direction.
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>

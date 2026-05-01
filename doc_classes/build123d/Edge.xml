@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Edge" inherits="RefCounted" version="4.3">
+	<brief_description>
+		A minimal topological edge wrapper used by the current build123d port.
+	</brief_description>
+	<description>
+		[Edge] currently exposes only the functionality required by [Axis]. Use [method make_line] to create a straight edge between two points.
+	</description>
+	<methods>
+		<method name="make_line" qualifiers="static">
+			<return type="Edge">
+			</return>
+			<argument index="0" name="start" type="Vector3">
+			</argument>
+			<argument index="1" name="end" type="Vector3">
+			</argument>
+			<description>
+				Creates a straight edge from [param start] to [param end].
+			</description>
+		</method>
+		<method name="is_valid">
+			<return type="bool">
+			</return>
+			<description>
+				Returns [code]true[/code] if this wrapper contains a valid OpenCASCADE edge.
+			</description>
+		</method>
+	</methods>
+	<members>
+	</members>
+	<constants>
+	</constants>
+</class>

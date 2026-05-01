@@ -9,12 +9,18 @@
 #include "gdextension_interface.h"
 
 // Include headers for all detected classes
+#include "build123d/axis.h"
+#include "build123d/edge.h"
+#include "build123d/location.h"
 void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
     if (p_level != godot::MODULE_INITIALIZATION_LEVEL_SCENE) {
         return;
     }
 
     // Register all discovered wrapper classes
+    GDREGISTER_CLASS(Axis);
+    GDREGISTER_CLASS(Edge);
+    GDREGISTER_CLASS(Location);
 }
 
 void gdext_uninitialize_module(godot::ModuleInitializationLevel p_level) {

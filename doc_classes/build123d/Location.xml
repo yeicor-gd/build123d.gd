@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="Location" inherits="RefCounted" version="4.3">
+	<brief_description>
+		A position and orientation transform.
+	</brief_description>
+	<description>
+		[Location] wraps OpenCASCADE's [code]TopLoc_Location[/code]. It currently supports translation and intrinsic XYZ Euler rotation in degrees, which is enough for the current [Axis] constructor pathways.
+	</description>
+	<methods>
+		<method name="create" qualifiers="static">
+			<return type="Location">
+			</return>
+			<argument index="0" name="position" type="Vector3">
+			</argument>
+			<argument index="1" name="orientation" type="Vector3" default="Vector3(0, 0, 0)">
+			</argument>
+			<description>
+				Creates a location from [param position] and intrinsic XYZ Euler angles in degrees.
+			</description>
+		</method>
+	</methods>
+	<members>
+		<member name="position" type="Vector3" setter="set_position" getter="get_position">
+			The translation component.
+		</member>
+		<member name="orientation" type="Vector3" setter="set_orientation" getter="get_orientation">
+			The intrinsic XYZ Euler rotation in degrees.
+		</member>
+	</members>
+	<constants>
+	</constants>
+</class>
