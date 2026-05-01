@@ -74,7 +74,7 @@
 			The axis origin in world coordinates.
 		</member>
 		<member name="direction" type="Vector3" setter="set_direction" getter="get_direction">
-			The normalized axis direction.
+			The normalized axis direction. Assigning a non-zero vector updates the direction and stores it normalized.
 		</member>
 	</members>
 	<constants>

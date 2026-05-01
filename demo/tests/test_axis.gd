@@ -126,3 +126,18 @@ func test_axis_angle_between() -> String:
 		return "Expected 180 degrees between opposite axes"
 
 	return ""
+
+
+func test_axis_direction_property() -> String:
+	var axis := Axis.create(Vector3.ZERO, Vector3(0, 0, 2))
+	if axis == null:
+		return "Failed to create axis for direction property test"
+
+	if not axis.direction.is_equal_approx(Vector3(0, 0, 1)):
+		return "Axis.direction getter should return a normalized vector"
+
+	axis.direction = Vector3(0, 5, 0)
+	if not axis.direction.is_equal_approx(Vector3(0, 1, 0)):
+		return "Axis.direction setter should normalize assigned vectors"
+
+	return ""
