@@ -89,6 +89,17 @@ func test_copy() -> String:
         return "Copied direction mismatch"
     return ""
 
+func test_deepcopy() -> String:
+    var axis = Axis.create_from_origin_dir(Vector3(1, 2, 3), Vector3(0, 0, 1))
+    var copied = axis.deepcopy()
+    if not copied:
+        return "deepcopy() returned null"
+    if copied.get_position() != axis.get_position():
+        return "Deepcopied position mismatch"
+    if copied.get_direction() != axis.get_direction():
+        return "Deepcopied direction mismatch"
+    return ""
+
 func test_is_coaxial() -> String:
     var axis1 = Axis.create_from_origin_dir(Vector3(0, 0, 0), Vector3(1, 0, 0))
     var axis2 = Axis.create_from_origin_dir(Vector3(0, 0, 0), Vector3(1, 0, 0))

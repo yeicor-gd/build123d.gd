@@ -158,6 +158,13 @@
                 Returns a shallow copy of this axis.
             </description>
         </method>
+        <method name="deepcopy">
+            <return type="Axis" />
+            <description>
+                Returns a deep copy of this axis.
+                Note: For Axis, this is identical to copy() since gp_Ax1 is a value type.
+            </description>
+        </method>
         <method name="located">
             <return type="Axis" />
             <argument index="0" name="location" type="Variant">

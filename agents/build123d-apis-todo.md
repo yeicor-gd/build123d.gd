@@ -1,6 +1,6 @@
 [x] Axis(*args, **kwargs)
-[-] Axis.**copy**() -> Axis
-[ ] Axis.**deepcopy**(_memo) -> Axis
+[x] Axis.**copy**() -> Axis
+[-] Axis.**deepcopy**(_memo) -> Axis
 [ ] Axis.**neg**() -> Axis
 [ ] Axis.angle_between(other: Axis) -> float
 [ ] Axis.direction: unknown

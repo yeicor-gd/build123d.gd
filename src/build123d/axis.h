@@ -57,6 +57,7 @@ public:
     Ref<Axis> reverse() const;
     Ref<Axis> neg() const;
     Ref<Axis> copy() const;
+    Ref<Axis> deepcopy() const;
 
     Ref<Axis> located(const Variant &p_location);
     Variant to_plane() const;

@@ -40,6 +40,7 @@ void Axis::_bind_methods() {
     ClassDB::bind_method(D_METHOD("reverse"), &Axis::reverse);
     ClassDB::bind_method(D_METHOD("neg"), &Axis::neg);
     ClassDB::bind_method(D_METHOD("copy"), &Axis::copy);
+    ClassDB::bind_method(D_METHOD("deepcopy"), &Axis::deepcopy);
     ClassDB::bind_method(D_METHOD("located", "location"), &Axis::located);
     ClassDB::bind_method(D_METHOD("to_plane"), &Axis::to_plane);
     ClassDB::bind_method(D_METHOD("intersect", "other"), &Axis::intersect);
@@ -177,6 +178,11 @@ Ref<Axis> Axis::copy() const {
         axis->wrapped = new gp_Ax1(*wrapped);
     }
     return axis;
+}
+
+Ref<Axis> Axis::deepcopy() const {
+    // For Axis, deepcopy is the same as copy since gp_Ax1 is a value type
+    return copy();
 }
 
 Ref<Axis> Axis::located(const Variant &p_location) {
