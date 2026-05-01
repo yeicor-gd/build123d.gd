@@ -110,3 +110,19 @@ func test_axis_neg() -> String:
 		return position_error
 
 	return _assert_vec3_close(negated.direction, Vector3(-1, 0, 0), "direction")
+
+
+func test_axis_angle_between() -> String:
+	var x_axis := Axis.create(Vector3.ZERO, Vector3(1, 0, 0))
+	var y_axis := Axis.create(Vector3.ZERO, Vector3(0, 1, 0))
+	var opposite_axis := Axis.create(Vector3(1, 1, 1), Vector3(-1, 0, 0))
+	if x_axis == null or y_axis == null or opposite_axis == null:
+		return "Failed to create axes for angle_between"
+
+	if not is_equal_approx(x_axis.angle_between(y_axis), 90.0):
+		return "Expected 90 degrees between X and Y axes"
+
+	if not is_equal_approx(x_axis.angle_between(opposite_axis), 180.0):
+		return "Expected 180 degrees between opposite axes"
+
+	return ""

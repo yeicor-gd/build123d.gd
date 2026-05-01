@@ -59,6 +59,15 @@
 				Returns a new [Axis] with the same [member position] and the opposite [member direction].
 			</description>
 		</method>
+		<method name="angle_between">
+			<return type="float">
+			</return>
+			<argument index="0" name="other" type="Axis">
+			</argument>
+			<description>
+				Returns the angle in degrees between this axis direction and [param other].
+			</description>
+		</method>
 	</methods>
 	<members>
 		<member name="position" type="Vector3" setter="set_position" getter="get_position">

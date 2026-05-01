@@ -2,7 +2,7 @@
 [x] completed Axis.**copy**() -> Axis
 [x] completed Axis.**deepcopy**(_memo) -> Axis
 [x] completed Axis.**neg**() -> Axis
-[ ] Axis.angle_between(other: Axis) -> float
+[x] completed Axis.angle_between(other: Axis) -> float
 [ ] Axis.direction: unknown
 [ ] Axis.intersect(*args, **kwargs)
 [ ] Axis.is_coaxial(other: Axis, angular_tolerance: float = 1e-05, linear_tolerance: float = 1e-05) -> bool
