@@ -9,60 +9,12 @@
 #include "gdextension_interface.h"
 
 // Include headers for all detected classes
-#include "Axis.h"
-#include "CircleWire.h"
-#include "Compound.h"
-#include "Edge.h"
-#include "EllipseWire.h"
-#include "Face.h"
-#include "GeometryVector.h"
-#include "Location.h"
-#include "OpenCascadeVersion.h"
-#include "Plane.h"
-#include "PolygonWire.h"
-#include "RectangleWire.h"
-#include "RegularPolygonWire.h"
-#include "Shell.h"
-#include "Solid.h"
-#include "SolidBox.h"
-#include "SolidCone.h"
-#include "SolidCylinder.h"
-#include "SolidSphere.h"
-#include "SolidTorus.h"
-#include "SolidWedge.h"
-#include "TopoShape.h"
-#include "Vertex.h"
-#include "Wire.h"
 void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
     if (p_level != godot::MODULE_INITIALIZATION_LEVEL_SCENE) {
         return;
     }
 
     // Register all discovered wrapper classes
-    GDREGISTER_CLASS(Axis);
-    GDREGISTER_CLASS(CadPlane);
-    GDREGISTER_CLASS(GeometryVector);
-    GDREGISTER_CLASS(Location);
-    GDREGISTER_CLASS(OpenCascadeVersion);
-    GDREGISTER_CLASS(TopoShape);
-    GDREGISTER_CLASS(Vertex);
-    GDREGISTER_CLASS(Wire);
-    GDREGISTER_CLASS(CircleWire);
-    GDREGISTER_CLASS(Compound);
-    GDREGISTER_CLASS(Edge);
-    GDREGISTER_CLASS(EllipseWire);
-    GDREGISTER_CLASS(Face);
-    GDREGISTER_CLASS(PolygonWire);
-    GDREGISTER_CLASS(RectangleWire);
-    GDREGISTER_CLASS(RegularPolygonWire);
-    GDREGISTER_CLASS(Shell);
-    GDREGISTER_CLASS(Solid);
-    GDREGISTER_CLASS(SolidBox);
-    GDREGISTER_CLASS(SolidCone);
-    GDREGISTER_CLASS(SolidCylinder);
-    GDREGISTER_CLASS(SolidSphere);
-    GDREGISTER_CLASS(SolidTorus);
-    GDREGISTER_CLASS(SolidWedge);
 }
 
 void gdext_uninitialize_module(godot::ModuleInitializationLevel p_level) {

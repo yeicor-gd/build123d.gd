@@ -4,3 +4,6 @@
 [submodule "vcpkg"]
 	path = vcpkg
 	url = git@github.com:microsoft/vcpkg.git
+[submodule "build123d"]
+	path = build123d
+	url = git@github.com:gumyr/build123d.git
