@@ -256,3 +256,39 @@ static func test_circle_wire_offset_2d() -> String:
 		return "unexpected shrunk circle circumference: %s" % shrunk.get_length()
 
 	return ""
+
+
+static func test_slot_overall_wire_default_plane() -> String:
+	var slot := SlotOverallWire.new()
+	slot.build_slot_overall(8.0, 2.0)
+
+	if not slot.is_closed():
+		return "slot wire was not closed"
+	if not _approx(slot.get_length(), 12.0 + TAU, 0.03):
+		return "unexpected slot perimeter: %s" % slot.get_length()
+	if not _approx_vec(slot.get_bounding_box_size(), Vector3(8.0, 2.0, 0.0), 0.02):
+		return "unexpected slot bounds size: %s" % str(slot.get_bounding_box_size())
+
+	var face := Face.new()
+	face.build_from_wire(slot, true)
+	if not _approx(face.get_surface_area(), 12.0 + PI, 0.03):
+		return "unexpected slot face area: %s" % face.get_surface_area()
+
+	return ""
+
+
+static func test_slot_overall_wire_custom_plane_and_circle_case() -> String:
+	var plane := CadPlane.new()
+	plane.set_plane(Vector3(10.0, 0.0, 0.0), Vector3.UP, Vector3.RIGHT)
+
+	var slot := SlotOverallWire.new()
+	slot.build_slot_overall(4.0, 4.0, plane, false)
+
+	if not _approx_vec(slot.get_bounding_box_min(), Vector3(10.0, 0.0, -4.0), 0.03):
+		return "unexpected custom-plane slot bounds min: %s" % str(slot.get_bounding_box_min())
+	if not _approx_vec(slot.get_bounding_box_max(), Vector3(14.0, 0.0, 0.0), 0.03):
+		return "unexpected custom-plane slot bounds max: %s" % str(slot.get_bounding_box_max())
+	if not _approx(slot.get_length(), TAU * 2.0, 0.03):
+		return "unexpected circular slot perimeter: %s" % slot.get_length()
+
+	return ""
