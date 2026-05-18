@@ -4,7 +4,7 @@
 		Plane-based polygon profile wire primitive.
 	</brief_description>
 	<description>
-		[PolygonWire] builds a wire from 2D points on an optional [CadPlane]. It is a sketch convenience wrapper over [Wire.build_polygon], lifting plane-space points into 3D automatically.
+		[PolygonWire] builds a wire from 2D points on an optional [CadPlane]. It is a sketch convenience wrapper over [method Wire.build_polygon], lifting plane-space points into 3D automatically.
 	</description>
 	<methods>
 		<method name="build_polygon_2d">

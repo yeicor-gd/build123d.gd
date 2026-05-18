@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           elementFormDefault="qualified">
+
+    <xs:element name="class" type="ClassDoc"/>
+
+    <xs:complexType name="ClassDoc">
+        <xs:sequence>
+            <xs:element name="brief_description" type="bbcodeString" minOccurs="0"/>
+            <xs:element name="description" type="bbcodeString"/>
+
+            <xs:element name="tutorials" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="tutorial" type="TutorialDoc" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="properties" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="property" type="PropertyDoc" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="methods" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="method" type="MethodDoc" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="constructors" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="constructor" type="MethodDoc" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="operators" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="operator" type="MethodDoc" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="members" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="member" type="PropertyDoc" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="signals" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="signal" type="SignalDoc" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="constants" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="enum" type="EnumDoc" minOccurs="0" maxOccurs="unbounded"/>
+                        <xs:element name="constant" type="ConstantDoc" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="annotations" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="annotation" type="AnnotationDoc" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+
+            <xs:element name="theme_properties" minOccurs="0">
+                <xs:complexType>
+                    <xs:sequence>
+                        <xs:element name="theme_item" type="ThemeItemDoc" minOccurs="0" maxOccurs="unbounded"/>
+                    </xs:sequence>
+                </xs:complexType>
+            </xs:element>
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="inherits" type="xs:string" use="optional"/>
+        <xs:attribute name="is_deprecated" type="xs:boolean" use="optional"/>
+        <xs:attribute name="is_experimental" type="xs:boolean" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="MethodDoc">
+        <xs:sequence>
+            <xs:element name="return" type="ReturnDoc" minOccurs="0"/>
+            <xs:element name="param" type="ParamDoc" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="description" type="bbcodeString"/>
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="qualifiers" type="QualifierString" use="optional"/>
+        <xs:attribute name="is_deprecated" type="xs:boolean" use="optional"/>
+        <xs:attribute name="is_experimental" type="xs:boolean" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="ReturnDoc">
+        <xs:attribute name="type" type="TypeString" use="required"/>
+        <xs:attribute name="enum" type="xs:string" use="optional"/>
+        <xs:attribute name="is_bitfield" type="xs:boolean" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="ParamDoc">
+        <xs:attribute name="index" type="xs:nonNegativeInteger" use="required"/>
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="TypeString" use="required"/>
+        <xs:attribute name="default" type="xs:string" use="optional"/>
+        <xs:attribute name="enum" type="xs:string" use="optional"/>
+        <xs:attribute name="is_bitfield" type="xs:boolean" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="PropertyDoc">
+        <xs:sequence>
+            <xs:element name="description" type="bbcodeString"/>
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="TypeString" use="required"/>
+        <xs:attribute name="default" type="xs:string" use="optional"/>
+        <xs:attribute name="setter" type="xs:string" use="optional"/>
+        <xs:attribute name="getter" type="xs:string" use="optional"/>
+        <xs:attribute name="enum" type="xs:string" use="optional"/>
+        <xs:attribute name="is_bitfield" type="xs:boolean" use="optional"/>
+        <xs:attribute name="is_deprecated" type="xs:boolean" use="optional"/>
+        <xs:attribute name="is_experimental" type="xs:boolean" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="SignalDoc">
+        <xs:sequence>
+            <xs:element name="argument" type="ArgumentDoc" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="description" type="bbcodeString"/>
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="qualifiers" type="QualifierString" use="optional"/>
+        <xs:attribute name="is_deprecated" type="xs:boolean" use="optional"/>
+        <xs:attribute name="is_experimental" type="xs:boolean" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="EnumDoc">
+        <xs:sequence>
+            <xs:element name="description" type="bbcodeString"/>
+            <xs:element name="constant" type="ConstantDoc" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="is_deprecated" type="xs:boolean" use="optional"/>
+        <xs:attribute name="is_experimental" type="xs:boolean" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="ConstantDoc">
+        <xs:sequence>
+            <xs:element name="description" type="bbcodeString" minOccurs="0"/>
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="value" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="TypeString" use="optional"/>
+        <xs:attribute name="enum" type="xs:string" use="optional"/>
+        <xs:attribute name="is_deprecated" type="xs:boolean" use="optional"/>
+        <xs:attribute name="is_experimental" type="xs:boolean" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="AnnotationDoc">
+        <xs:sequence>
+            <xs:element name="argument" type="ArgumentDoc" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="description" type="bbcodeString"/>
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="qualifiers" type="QualifierString" use="optional"/>
+        <xs:attribute name="is_deprecated" type="xs:boolean" use="optional"/>
+        <xs:attribute name="is_experimental" type="xs:boolean" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="ThemeItemDoc">
+        <xs:sequence>
+            <xs:element name="description" type="bbcodeString"/>
+        </xs:sequence>
+
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="TypeString" use="required"/>
+        <xs:attribute name="data_type" type="xs:string" use="required"/>
+        <xs:attribute name="default" type="xs:string" use="optional"/>
+        <xs:attribute name="is_deprecated" type="xs:boolean" use="optional"/>
+        <xs:attribute name="is_experimental" type="xs:boolean" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="ArgumentDoc">
+        <xs:attribute name="name" type="xs:string" use="required"/>
+        <xs:attribute name="type" type="TypeString" use="required"/>
+        <xs:attribute name="default" type="xs:string" use="optional"/>
+        <xs:attribute name="enum" type="xs:string" use="optional"/>
+        <xs:attribute name="is_bitfield" type="xs:boolean" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="TutorialDoc">
+        <xs:attribute name="link" type="xs:string" use="required"/>
+        <xs:attribute name="title" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:simpleType name="bbcodeString">
+        <xs:restriction base="xs:string"/>
+    </xs:simpleType>
+
+    <xs:simpleType name="QualifierString">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="(vararg|virtual|required|const|static|abstract)(\s+(vararg|virtual|required|const|static|abstract))*"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="TypeString">
+        <xs:restriction base="xs:string">
+            <xs:pattern value="([A-Za-z_][A-Za-z0-9_]*(\[[A-Za-z0-9_, ]+\])?(\[\])?)"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+</xs:schema>

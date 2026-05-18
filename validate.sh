@@ -29,6 +29,29 @@ fi
 
 DO_BUILD="${DO_BUILD:-1}"
 
+run_checked() {
+    tmp_output=$(mktemp)
+    if "$@" >"$tmp_output" 2>&1; then
+        rm -f "$tmp_output"
+        return 0
+    fi
+
+    if [ -n "$ERROR_FILE" ]; then
+        cat "$tmp_output" > "$ERROR_FILE"
+    fi
+    cat "$tmp_output"
+    rm -f "$tmp_output"
+    exit 1
+}
+
+echo "Validating doc_classes/*.xml against scripts/validate-doc_classes.xsd..."
+for doc_file in "$SCRIPT_DIR"/doc_classes/*.xml; do
+    run_checked xmllint --noout --schema "$SCRIPT_DIR/scripts/validate-doc_classes.xsd" "$doc_file"
+done
+
+echo "Validating doc_classes/*.xml against source bindings..."
+run_checked python3 "$SCRIPT_DIR/scripts/validate_doc_bindings.py"
+
 if [ "$DO_BUILD" = "1" ] || [ "$DO_BUILD" = "true" ]; then
     # Bootstrap vcpkg if needed
     if [ ! -f "$VCPKG_ROOT/vcpkg" ]; then
@@ -52,13 +75,7 @@ if [ "$DO_BUILD" = "1" ] || [ "$DO_BUILD" = "true" ]; then
     if [ $BUILD_EXIT -ne 0 ]; then
         echo "Build failed!"
         if [ -n "$ERROR_FILE" ]; then
-            {
-                echo "=== Build Failed ==="
-                grep -E "error:" "$BUILD_LOG" || true
-                find "$SCRIPT_DIR/vcpkg/buildtrees/gdext" -name "*.log" -type f 2>/dev/null | while read log_file; do
-                    grep -E "error:" "$log_file" || true
-                done
-            } > "$ERROR_FILE"
+            grep -E "^(ERROR:|error:|fatal error:|CMake Error|FAILED:|ninja: build stopped|collect2: error:|ld: |undefined reference to |clang: error:)" "$BUILD_LOG" > "$ERROR_FILE" || true
         fi
         exit 1
     fi
@@ -69,7 +86,9 @@ else
 fi
 
 RUNTIME_LOG=$(mktemp)
-trap "rm -f '$BUILD_LOG' '$RUNTIME_LOG'" EXIT
+GODOT_RUNTIME_HOME=$(mktemp -d)
+mkdir -p "$GODOT_RUNTIME_HOME/config" "$GODOT_RUNTIME_HOME/cache"
+trap "rm -f '$BUILD_LOG' '$RUNTIME_LOG'; rm -rf '$GODOT_RUNTIME_HOME'" EXIT
 
 if [ "$GODOT_VERSION" = "system" ]; then
     # Use system Godot, no sanitizers, no build
@@ -124,17 +143,17 @@ fi
 cd "$SCRIPT_DIR"
 
 if [ "$GODOT_VERSION" = "system" ]; then
-    $GODOT_BIN --editor --path "$SCRIPT_DIR/demo" --headless --quit 2>&1 # | tee "$RUNTIME_LOG" || true
-    $GODOT_BIN --path "$SCRIPT_DIR/demo" --headless 2>&1 | tee -a "$RUNTIME_LOG" || true
+    HOME="$GODOT_RUNTIME_HOME" XDG_CONFIG_HOME="$GODOT_RUNTIME_HOME/config" XDG_CACHE_HOME="$GODOT_RUNTIME_HOME/cache" $GODOT_BIN --editor --path "$SCRIPT_DIR/demo" --headless --quit 2>&1 # | tee "$RUNTIME_LOG" || true
+    HOME="$GODOT_RUNTIME_HOME" XDG_CONFIG_HOME="$GODOT_RUNTIME_HOME/config" XDG_CACHE_HOME="$GODOT_RUNTIME_HOME/cache" $GODOT_BIN --path "$SCRIPT_DIR/demo" --headless 2>&1 | tee -a "$RUNTIME_LOG" || true
 else
-    LD_PRELOAD=$(gcc -print-file-name=libasan.so) LSAN_OPTIONS=detect_leaks=0 $GODOT_BIN --editor --path "$SCRIPT_DIR/demo" --headless --quit 2>&1 # | tee "$RUNTIME_LOG" || true
-    LD_PRELOAD=$(gcc -print-file-name=libasan.so) $GODOT_BIN --path "$SCRIPT_DIR/demo" --headless 2>&1 | tee -a "$RUNTIME_LOG" || true
+    HOME="$GODOT_RUNTIME_HOME" XDG_CONFIG_HOME="$GODOT_RUNTIME_HOME/config" XDG_CACHE_HOME="$GODOT_RUNTIME_HOME/cache" LD_PRELOAD=$(gcc -print-file-name=libasan.so) LSAN_OPTIONS=detect_leaks=0 $GODOT_BIN --editor --path "$SCRIPT_DIR/demo" --headless --quit 2>&1 # | tee "$RUNTIME_LOG" || true
+    HOME="$GODOT_RUNTIME_HOME" XDG_CONFIG_HOME="$GODOT_RUNTIME_HOME/config" XDG_CACHE_HOME="$GODOT_RUNTIME_HOME/cache" LD_PRELOAD=$(gcc -print-file-name=libasan.so) $GODOT_BIN --path "$SCRIPT_DIR/demo" --headless 2>&1 | tee -a "$RUNTIME_LOG" || true
 fi
 
 _extract_runtime_errors() {
     local log_file="$1"
     grep -E -v "(ObjectDB|RID).*leaked|resources still in use at exit" "$log_file" | \
-    grep -A 1 -E "^ERROR:|^SCRIPT ERROR:|^WARNING:|^handle_crash:|Shader compilation error|Script compilation error|Parse error|undefined method|undefined symbol|not found|No such|^TESTS FAILED" || return 0
+    grep -E "^ERROR:|^SCRIPT ERROR:|^WARNING:|^handle_crash:|Shader compilation error|Script compilation error|Parse error|undefined method|undefined symbol|not found|No such|^TESTS FAILED" || return 0
 }
 
 ERRORS=$(_extract_runtime_errors "$RUNTIME_LOG" 2>/dev/null || true)

@@ -1,189 +1,45 @@
 # Implementation Status
 
-This repository is being extended incrementally toward build123d-style CAD functionality on top of Godot GDExtension and OpenCASCADE.
+This repository is being extended toward build123d-style CAD functionality on top of Godot GDExtension and OpenCASCADE.
 
-## Current Strategy
+## Working Rules
 
-Build the API in vertical slices, keeping the project passing `validate.sh` after each slice:
+- Stay build123d-first. Do not expand the OCCT surface just because it exists.
+- Keep each slice small, tested, and documented.
+- Validate `doc_classes/*.xml` against `scripts/validate-doc_classes.xsd` before and after each doc change.
+- Validate doc names against the bound C++ class/method/property/signal definitions before each merge.
+- Keep `validate.sh` green after every meaningful change.
+- Fix docs immediately if the editor/doc generator complains.
 
-1. Foundational math and shape wrappers
-2. Primitive solids and sketches
-3. Boolean and transform operations
-4. Topology inspection and selectors
-5. Import/export
-6. Higher-level build123d-style construction helpers
-
-## Completed
+## Completed Foundation
 
 - `OpenCascadeVersion` baseline wrapper and tests
-- Project build/test pipeline
+- Core math and placement helpers: `GeometryVector`, `Axis`, `Location`, `CadPlane`
+- Core topology wrappers: `TopoShape`, `Vertex`, `Edge`, `Wire`, `Face`, `Shell`, `Solid`, `Compound`
+- Primitive solids: `SolidBox`, `SolidCone`, `SolidCylinder`, `SolidSphere`, `SolidTorus`, `SolidWedge`
+- Profile primitives: `RectangleWire`, `RectangleRoundedWire`, `CircleWire`, `EllipseWire`, `RegularPolygonWire`, `SlotOverallWire`, `PolygonWire`
+- Shape operations: translate, rotate, scale, mirror, locate, extrude, revolve, loft, sweep, and 2D offset
+- Measurements and inspection: volume, surface area, center of mass, bounds, typed topology extraction, and edge sampling
+- Import/export: STEP and STL file and byte round-trips
+- Mesh conversion: `TopoShape.to_array_mesh()`
+- Registration regeneration: `src/register_types.sh`
 
-### Slice 1: Core wrappers
+## Current Focus
 
-Implemented:
+1. Keep documentation valid on all platforms before adding new features.
+2. Fill the remaining build123d modeling gaps in small slices.
+3. Add tests alongside each new public API.
 
-- `GeometryVector` backed by `gp_Vec`
-- `TopoShape` backed by `TopoDS_Shape`
-- `SolidBox` backed by `BRepPrimAPI_MakeBox`
-- boolean operations: `fuse`, `cut`, `common`
-- measurements: volume, surface area, center of mass, axis-aligned bounds
-- regression coverage for vector math, primitive construction, and boolean volumes
-- registration generator updated to register inherited `GDCLASS` types in parent-before-child order
+## Next Build123d Slices
 
-Validation status:
+1. Boolean workflow refinement and any missing shape-combination helpers that map cleanly to build123d
+2. Selectors and topology queries for face, edge, vertex, and orientation-based filtering
+3. Higher-level construction helpers such as `extrude`, `revolve`, `loft`, and `sweep` polish
+4. Additional import/export behavior only when build123d needs it and the implementation is stable
+5. Convenience helpers that directly support build123d use cases, not broad OCCT coverage
 
-- `GODOT_VERSION=system ./validate.sh /tmp/errors.log >/tmp/verbose_output.log` passes
+## Deferred For Now
 
-## Completed
-
-### Slice 2: Interchange and Mesh Conversion
-
-Goal: make the OCCT-backed shapes practical in Godot by supporting robust CAD interchange and render-mesh generation.
-
-Implemented:
-
-- STEP import/export from file paths and byte buffers on `TopoShape`
-- STL import/export from file paths and byte buffers on `TopoShape`
-- `TopoShape.to_array_mesh()` using OCCT triangulation
-- regression coverage for STEP round-trips, STL round-trips, and mesh conversion
-
-Current blocker:
-
-- BREP import/export was investigated and partially implemented, but OCCT serialization paths in this build still crash under repeated in-process use. The public API for BREP has been deferred until a stable approach is identified.
-
-Planned validation:
-
-- STEP file/byte round-trip tests
-- STL file/byte round-trip tests
-- mesh AABB and surface generation tests
-
-Validation status:
-
-- `GODOT_VERSION=system ./validate.sh /tmp/errors.log >/tmp/verbose_output.log` passes
-
-## Completed
-
-### Slice 3: More Solids and Basic Transforms
-
-Goal: keep extending the low-level modeling surface with reusable primitives and shape transforms.
-
-Implemented:
-
-- `TopoShape.translated()`
-- `TopoShape.rotated()`
-- `TopoShape.scaled()`
-- `SolidCylinder`
-- `SolidSphere`
-- `SolidCone`
-- `SolidTorus`
-- `SolidWedge`
-
-Planned validation:
-
-- primitive volume and bounding-box tests
-- transform invariants and transformed bounds tests
-- direct torus primitive tests
-- direct wedge primitive tests
-
-Validation status:
-
-- `GODOT_VERSION=system ./validate.sh /tmp/errors.log >/tmp/verbose_output.log` passes
-
-## Next In Progress
-
-### Slice 4: Typed Topology and Placement Helpers
-
-Goal: move toward build123d’s richer modeling API with typed topology wrappers and placement/orientation helpers.
-
-Implemented in progress:
-
-- `Vertex` wrapper with direct point construction and inspection
-- `Edge` wrapper with line construction, endpoint inspection, length, and polyline sampling
-- `Wire` wrapper with polygon construction, closure/length inspection, ordered edge traversal, and stitched polyline extraction
-- `Wire.offset_2d(distance)` for planar profile growth and shrink operations
-- `Face` wrapper with wire/polygon construction, planarity checks, outer-wire extraction, and representative normal access
-- `Face.build_from_wires(outer, inner_wires, only_plane)` and `Face.get_inner_wires()` for planar faces with hole boundaries
-- `Face.offset_2d(distance)` for planar face growth and shrink operations, including hole-aware offsets
-- `Shell` wrapper with closure and face-count inspection
-- `Compound` wrapper with child-shape construction and direct child-count inspection
-- `Solid` wrapper with closure and shell-count inspection, now serving as the common base for solid primitives
-- `Axis` helper backed by `gp_Ax1`
-- `CadPlane` helper backed by `gp_Pln` to avoid colliding with Godot's built-in `Plane` type
-- `Location` helper backed by `gp_Trsf`
-- `RectangleWire` profile primitive on top of `Wire` and `CadPlane`
-- `RectangleRoundedWire` profile primitive on top of `Wire` and `CadPlane`, preserving analytic circular corner arcs
-- `CircleWire` profile primitive on top of `Wire` and `CadPlane`, preserving OCCT analytic-circle geometry
-- `EllipseWire` profile primitive on top of `Wire` and `CadPlane`, preserving OCCT analytic-ellipse geometry
-- `RegularPolygonWire` profile primitive on top of `Wire` and `CadPlane`
-- `SlotOverallWire` profile primitive on top of `Wire` and `CadPlane`, preserving analytic semicircular ends
-- `PolygonWire` sketch convenience for plane-based 2D point profiles
-- `Face.extruded(direction)` for first prism-style feature construction
-- `Wire.extruded(direction, only_plane)` as a profile-to-solid convenience bridge
-- `Face.revolved(axis, angle_radians)` for first axis-driven rotational feature construction
-- `Wire.revolved(axis, angle_radians, only_plane)` as a profile-to-solid revolve convenience bridge
-- `Wire.lofted_to(other, make_solid, ruled)` for first multi-profile loft construction
-- `Wire.swept_along(spine)` for first profile-along-path sweep construction
-- `TopoShape.mirrored_about_point()`, `mirrored_about_axis()`, and `mirrored_about_plane()` for helper-driven mirror transforms
-- `TopoShape.get_vertices()` and `TopoShape.get_edges()` for unique typed topology extraction
-- `TopoShape.get_wires()` for unique typed wire extraction
-- `TopoShape.get_faces()` for unique typed face extraction
-- `TopoShape.get_shells()` for unique typed shell extraction
-- `TopoShape.get_compounds()` for unique typed compound extraction
-- `TopoShape.get_solids()` for unique typed solid extraction
-- `TopoShape.get_vertex_positions()` for direct point extraction from topological vertices
-- `TopoShape.get_edge_polylines(deflection)` for direct edge sampling without forcing mesh conversion
-- `TopoShape.located()` for applying reusable placement transforms
-
-Why this slice starts here:
-
-- it exposes topology-native data immediately in Godot
-- it keeps non-mesh workflows practical for vertices and edges
-- it provides a stable base for future typed `Wire`, `Face`, and `Solid` wrappers
-
-Planned classes:
-
-- `Vertex`, `Edge`, `Wire`, `Face`, `Shell`, `Compound`, `Solid`
-- `Axis`, `Plane`, `Location`
-
-Planned validation:
-
-- topology extraction tests for vertices and edges
-- wire construction and wire extraction tests
-- face construction and face extraction tests
-- face construction with inner wires and holed feature tests
-- planar face offset tests
-- shell extraction and shell-wrapper tests
-- compound construction and compound extraction tests
-- solid extraction and solid-wrapper tests
-- axis/location construction and transform tests
-- plane construction, projection, and transform tests
-- rectangular profile construction tests
-- rounded-rectangle profile construction tests
-- circular profile construction tests
-- ellipse profile construction tests
-- regular polygon profile construction tests
-- slot profile construction tests
-- plane-based polygon profile construction tests
-- planar wire offset tests
-- linear extrusion tests from faces and wires
-- revolve tests from faces and wires
-- loft tests between closed profile wires
-- sweep tests from closed profiles along wire spines
-- mirror transform tests from point, axis, and plane references
-- typed wrapper construction and inspection tests
-- placement and orientation tests
-
-## Next Likely Slices
-
-- typed topology wrappers (`Vertex`, `Edge`, `Wire`, `Face`, `Solid`)
-- transforms (higher-level helper composition on top of translate/rotate/scale/mirror)
-- more 3D primitives (advanced wedge variants)
-- profile construction (`Line`, `Circle`, `Rectangle`, `Polygon`)
-- feature operations (`extrude`, `revolve`, `loft`, `sweep`)
-- import/export and selectors
-
-## Notes For Resuming
-
-- Prefer adding small, tested OCCT-backed capabilities instead of broad stubs.
-- Keep names stable and documented in `doc_classes/`.
-- Regenerate `src/register_types.cpp` and `src/register_types.h` with `./src/register_types.sh` after adding any `GDCLASS`.
+- Exhaustive OCCT wrapper coverage
+- Rare constructors and niche kernel APIs that do not support build123d parity
+- New public methods without tests and doc updates

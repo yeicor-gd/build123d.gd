@@ -9,6 +9,13 @@ This document provides comprehensive details for agents working on reimplementin
 - **Language**: C++ with godot-cpp bindings
 - **Build System**: CMake + vcpkg
 
+## Porting Rules
+
+- Keep the work build123d-first. Add OCCT wrappers only when they support an explicit build123d API slice.
+- Prefer small, testable vertical slices over broad kernel coverage.
+- Avoid adding rare or exploratory OCCT methods unless they unblock a documented build123d feature.
+- Treat documentation as part of the build. New or changed docs must be valid before feature work lands.
+
 ## Project Structure
 
 ```
@@ -82,6 +89,11 @@ Run the regeneration script:
 
 Write `./doc_classes/<ClassName>.xml` with comprehensive and accurate documentation. See `./doc_classes/OpenCascadeVersion.xml` for an example and see `https://docs.godotengine.org/en/stable/engine_details/class_reference/index.html` for more information.
 
+- Use only Godot-supported doc markup and cross-references. Prefer `[Class]` and `[method Class.method]`; do not invent custom tag syntax.
+- Keep doc entries limited to the methods that are actually exposed and useful for build123d parity.
+- Run `xmllint --noout --schema scripts/validate-doc_classes.xsd doc_classes/*.xml` before considering a change complete.
+- Also run the binding validator through `validate.sh` so doc names stay aligned with the C++ registrations.
+
 ### 4. Create Tests
 
 Add test files in `demo/tests/`:
@@ -108,6 +120,8 @@ static func test_example() -> String:
 GODOT_VERSION=system ./validate.sh /tmp/errors.log >/tmp/output.log
 ```
 
+When working on docs or class registration, `validate.sh` must stay green and both the schema and binding validation steps must pass on their own.
+
 ## OpenCASCADE Integration
 
 ### Available OCCT Headers
@@ -131,7 +145,7 @@ Based on build123d's functionality:
 | build123d Class | Description | OCCT Class |
 |---------------|-------------|-----------|
 | Vector | 3D vector | `gp_Vec`, `gp_Dir` |
-| Plane | Work plane | `gp_Pln`, `Geom_Plane` |
+| CadPlane | Work plane helper (Godot-facing name) | `gp_Pln`, `Geom_Plane` |
 | Axis | X/Y/Z axis | `gp_Ax1`, `gp_Ax2`, `gp_Ax3` |
 | Location | Position+orientation | `gp_Trsf`, `TopLoc_Location` |
 
@@ -242,3 +256,10 @@ Based on build123d's functionality:
 - `OpenCascadeVersion` class implemented and tested
 - Test runner passes
 - Project structure ready for expanded functionality
+
+## Resuming Notes
+
+- Prefer adding small, tested OCCT-backed capabilities instead of broad stubs.
+- Keep names stable and documented in `doc_classes/`.
+- Regenerate `src/register_types.cpp` and `src/register_types.h` with `./src/register_types.sh` after adding any `GDCLASS`.
+- Keep `IMPLEMENTATION_STATUS.md` concise and centered on build123d slices, not an exhaustive OCCT catalog.
