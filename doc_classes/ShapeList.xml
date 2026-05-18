@@ -92,6 +92,25 @@
 				Filters shapes by their center position along [param axis] and returns the matching shapes sorted by that position.
 			</description>
 		</method>
+		<method name="filter_by_axis" qualifiers="const">
+			<return type="ShapeList" />
+			<param index="0" name="axis" type="Axis" />
+			<param index="1" name="minimum" type="float" />
+			<param index="2" name="maximum" type="float" />
+			<param index="3" name="min_inclusive" type="bool" default="true" />
+			<param index="4" name="max_inclusive" type="bool" default="true" />
+			<description>
+				Alias for [method filter_by_position] that uses the build123d-style axis terminology.
+			</description>
+		</method>
+		<method name="sort_by_axis" qualifiers="const">
+			<return type="ShapeList" />
+			<param index="0" name="axis" type="Axis" />
+			<param index="1" name="reverse" type="bool" default="false" />
+			<description>
+				Sorts the list by the center position of each shape along [param axis].
+			</description>
+		</method>
 		<method name="sort_by_distance" qualifiers="const">
 			<return type="ShapeList" />
 			<param index="0" name="other" type="TopoShape" />

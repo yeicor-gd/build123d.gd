@@ -35,6 +35,8 @@ public:
     godot::Ref<ShapeList> solids() const;
 
     godot::Ref<ShapeList> filter_by_position(const godot::Ref<Axis> &p_axis, double p_minimum, double p_maximum, bool p_min_inclusive = true, bool p_max_inclusive = true) const;
+    godot::Ref<ShapeList> filter_by_axis(const godot::Ref<Axis> &p_axis, double p_minimum, double p_maximum, bool p_min_inclusive = true, bool p_max_inclusive = true) const;
+    godot::Ref<ShapeList> sort_by_axis(const godot::Ref<Axis> &p_axis, bool p_reverse = false) const;
     godot::Ref<ShapeList> sort_by_distance(const godot::Ref<TopoShape> &p_other, bool p_reverse = false) const;
 };
 

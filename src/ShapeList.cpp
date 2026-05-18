@@ -47,6 +47,8 @@ void ShapeList::_bind_methods() {
     ClassDB::bind_method(D_METHOD("compounds"), &ShapeList::compounds);
     ClassDB::bind_method(D_METHOD("solids"), &ShapeList::solids);
     ClassDB::bind_method(D_METHOD("filter_by_position", "axis", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_position, DEFVAL(true), DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("filter_by_axis", "axis", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_axis, DEFVAL(true), DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("sort_by_axis", "axis", "reverse"), &ShapeList::sort_by_axis, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_distance", "other", "reverse"), &ShapeList::sort_by_distance, DEFVAL(false));
 }
 
@@ -219,6 +221,43 @@ Ref<ShapeList> ShapeList::filter_by_position(const Ref<Axis> &p_axis, double p_m
         ordered.push_back(entry.second);
     }
     return shape_list_from_flattened(ordered);
+}
+
+Ref<ShapeList> ShapeList::filter_by_axis(const Ref<Axis> &p_axis, double p_minimum, double p_maximum, bool p_min_inclusive, bool p_max_inclusive) const {
+    return filter_by_position(p_axis, p_minimum, p_maximum, p_min_inclusive, p_max_inclusive);
+}
+
+Ref<ShapeList> ShapeList::sort_by_axis(const Ref<Axis> &p_axis, bool p_reverse) const {
+    ERR_FAIL_COND_V_MSG(p_axis.is_null(), Ref<ShapeList>(), "ShapeList.sort_by_axis requires a non-null axis.");
+
+    const gp_Dir direction = p_axis->get_occt_axis().Direction();
+    const Vector3 origin = p_axis->get_origin();
+
+    std::vector<std::pair<double, Ref<TopoShape>>> ordered;
+    ordered.reserve(shapes.size());
+    for (int64_t index = 0; index < shapes.size(); ++index) {
+        const Ref<TopoShape> shape = shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        const Vector3 center = shape_center(shape);
+        const Vector3 relative = center - origin;
+        const double position = static_cast<double>(relative.x) * direction.X() + static_cast<double>(relative.y) * direction.Y() + static_cast<double>(relative.z) * direction.Z();
+        ordered.emplace_back(position, shape);
+    }
+
+    std::sort(ordered.begin(), ordered.end(), [p_reverse](const auto &p_a, const auto &p_b) {
+        if (p_reverse) {
+            return p_a.first > p_b.first;
+        }
+        return p_a.first < p_b.first;
+    });
+
+    Array sorted;
+    for (const auto &entry : ordered) {
+        sorted.push_back(entry.second);
+    }
+    return shape_list_from_flattened(sorted);
 }
 
 Ref<ShapeList> ShapeList::sort_by_distance(const Ref<TopoShape> &p_other, bool p_reverse) const {
