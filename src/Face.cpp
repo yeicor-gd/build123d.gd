@@ -17,17 +17,44 @@
 #include <GeomAbs_SurfaceType.hxx>
 #include <GeomLProp_SLProps.hxx>
 #include <TopAbs_ShapeEnum.hxx>
+#include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
 
 using namespace godot;
 
+namespace {
+
+void build_face_from_wires_impl(Face *p_face, const Ref<Wire> &p_outer_wire, const Array &p_inner_wires, bool p_only_plane) {
+    ERR_FAIL_COND_MSG(p_outer_wire.is_null() || p_outer_wire->is_null(), "Face.build_from_wires requires a non-null outer wire.");
+
+    try {
+        BRepBuilderAPI_MakeFace builder(TopoDS::Wire(p_outer_wire->get_occt_shape()), p_only_plane ? Standard_True : Standard_False);
+        for (int64_t index = 0; index < p_inner_wires.size(); ++index) {
+            const Ref<Wire> inner_wire = p_inner_wires[index];
+            ERR_FAIL_COND_MSG(inner_wire.is_null() || inner_wire->is_null(), "Face.build_from_wires requires every inner wire entry to be a non-null Wire.");
+            TopoDS_Wire occt_inner_wire = TopoDS::Wire(inner_wire->get_occt_shape());
+            occt_inner_wire.Reverse();
+            builder.Add(occt_inner_wire);
+        }
+        builder.Build();
+        ERR_FAIL_COND_MSG(!builder.IsDone(), "OpenCASCADE face construction did not complete.");
+        p_face->set_occt_shape(builder.Shape());
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+    }
+}
+
+} // namespace
+
 void Face::_bind_methods() {
     ClassDB::bind_method(D_METHOD("build_from_wire", "wire", "only_plane"), &Face::build_from_wire, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("build_from_wires", "outer_wire", "inner_wires", "only_plane"), &Face::build_from_wires, DEFVAL(Array()), DEFVAL(false));
     ClassDB::bind_method(D_METHOD("build_polygon", "points", "only_plane"), &Face::build_polygon, DEFVAL(true));
     ClassDB::bind_method(D_METHOD("extruded", "direction"), &Face::extruded);
     ClassDB::bind_method(D_METHOD("revolved", "axis", "angle_radians"), &Face::revolved, DEFVAL(6.28318530717958647692));
     ClassDB::bind_method(D_METHOD("is_planar"), &Face::is_planar);
     ClassDB::bind_method(D_METHOD("get_outer_wire"), &Face::get_outer_wire);
+    ClassDB::bind_method(D_METHOD("get_inner_wires"), &Face::get_inner_wires);
     ClassDB::bind_method(D_METHOD("get_normal"), &Face::get_normal);
 }
 
@@ -41,16 +68,11 @@ Ref<Face> Face::from_occt(const TopoDS_Face &p_face) {
 }
 
 void Face::build_from_wire(const Ref<Wire> &p_wire, bool p_only_plane) {
-    ERR_FAIL_COND_MSG(p_wire.is_null() || p_wire->is_null(), "Face.build_from_wire requires a non-null wire.");
+    build_face_from_wires_impl(this, p_wire, Array(), p_only_plane);
+}
 
-    try {
-        BRepBuilderAPI_MakeFace builder(TopoDS::Wire(p_wire->get_occt_shape()), p_only_plane ? Standard_True : Standard_False);
-        builder.Build();
-        ERR_FAIL_COND_MSG(!builder.IsDone(), "OpenCASCADE face construction did not complete.");
-        set_occt_shape(builder.Shape());
-    } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
-    }
+void Face::build_from_wires(const Ref<Wire> &p_outer_wire, const Array &p_inner_wires, bool p_only_plane) {
+    build_face_from_wires_impl(this, p_outer_wire, p_inner_wires, p_only_plane);
 }
 
 void Face::build_polygon(const PackedVector3Array &p_points, bool p_only_plane) {
@@ -130,6 +152,27 @@ Ref<Wire> Face::get_outer_wire() const {
         return Wire::from_occt(outer_wire);
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_V_MSG(Ref<Wire>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Array Face::get_inner_wires() const {
+    ERR_FAIL_COND_V_MSG(is_null(), Array(), "Face.get_inner_wires requires a non-null shape.");
+
+    try {
+        const TopoDS_Face face = TopoDS::Face(get_occt_shape());
+        const TopoDS_Wire outer_wire = BRepTools::OuterWire(face);
+
+        Array inner_wires;
+        for (TopExp_Explorer explorer(face, TopAbs_WIRE); explorer.More(); explorer.Next()) {
+            const TopoDS_Wire wire = TopoDS::Wire(explorer.Current());
+            if (!outer_wire.IsNull() && wire.IsSame(outer_wire)) {
+                continue;
+            }
+            inner_wires.push_back(Wire::from_occt(wire));
+        }
+        return inner_wires;
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
     }
 }
 

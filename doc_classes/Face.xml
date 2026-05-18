@@ -15,6 +15,15 @@
 				Builds a face from [param wire]. When [param only_plane] is [code]true[/code], OCCT is restricted to planar face construction.
 			</description>
 		</method>
+		<method name="build_from_wires">
+			<return type="void" />
+			<param index="0" name="outer_wire" type="Wire" />
+			<param index="1" name="inner_wires" type="Array" default="[]" />
+			<param index="2" name="only_plane" type="bool" default="false" />
+			<description>
+				Builds a face from [param outer_wire] and any number of inner boundary wires in [param inner_wires]. Inner wires become holes in the resulting face.
+			</description>
+		</method>
 		<method name="build_polygon">
 			<return type="void" />
 			<param index="0" name="points" type="PackedVector3Array" />
@@ -48,6 +57,12 @@
 			<return type="Wire" />
 			<description>
 				Returns the outer boundary wire of the face.
+			</description>
+		</method>
+		<method name="get_inner_wires" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns the inner boundary wires of the face. These wires represent holes cut out of the outer boundary.
 			</description>
 		</method>
 		<method name="get_normal" qualifiers="const">

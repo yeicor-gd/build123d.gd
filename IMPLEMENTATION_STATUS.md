@@ -101,6 +101,7 @@ Implemented in progress:
 - `Edge` wrapper with line construction, endpoint inspection, length, and polyline sampling
 - `Wire` wrapper with polygon construction, closure/length inspection, ordered edge traversal, and stitched polyline extraction
 - `Face` wrapper with wire/polygon construction, planarity checks, outer-wire extraction, and representative normal access
+- `Face.build_from_wires(outer, inner_wires, only_plane)` and `Face.get_inner_wires()` for planar faces with hole boundaries
 - `Shell` wrapper with closure and face-count inspection
 - `Compound` wrapper with child-shape construction and direct child-count inspection
 - `Solid` wrapper with closure and shell-count inspection, now serving as the common base for solid primitives
@@ -145,6 +146,7 @@ Planned validation:
 - topology extraction tests for vertices and edges
 - wire construction and wire extraction tests
 - face construction and face extraction tests
+- face construction with inner wires and holed feature tests
 - shell extraction and shell-wrapper tests
 - compound construction and compound extraction tests
 - solid extraction and solid-wrapper tests
