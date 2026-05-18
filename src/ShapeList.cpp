@@ -39,6 +39,12 @@ void ShapeList::_bind_methods() {
     ClassDB::bind_method(D_METHOD("is_empty"), &ShapeList::is_empty);
     ClassDB::bind_method(D_METHOD("get_item", "index"), &ShapeList::get_item);
     ClassDB::bind_method(D_METHOD("to_array"), &ShapeList::to_array);
+    ClassDB::bind_method(D_METHOD("first"), &ShapeList::first);
+    ClassDB::bind_method(D_METHOD("last"), &ShapeList::last);
+    ClassDB::bind_method(D_METHOD("center"), &ShapeList::center);
+    ClassDB::bind_method(D_METHOD("get_bounding_box_min"), &ShapeList::get_bounding_box_min);
+    ClassDB::bind_method(D_METHOD("get_bounding_box_max"), &ShapeList::get_bounding_box_max);
+    ClassDB::bind_method(D_METHOD("get_bounding_box_size"), &ShapeList::get_bounding_box_size);
     ClassDB::bind_method(D_METHOD("vertices"), &ShapeList::vertices);
     ClassDB::bind_method(D_METHOD("edges"), &ShapeList::edges);
     ClassDB::bind_method(D_METHOD("wires"), &ShapeList::wires);
@@ -74,6 +80,88 @@ Ref<TopoShape> ShapeList::get_item(int64_t p_index) const {
 
 Array ShapeList::to_array() const {
     return shapes;
+}
+
+Ref<TopoShape> ShapeList::first() const {
+    ERR_FAIL_COND_V_MSG(shapes.is_empty(), Ref<TopoShape>(), "ShapeList.first requires at least one shape.");
+    return shapes[0];
+}
+
+Ref<TopoShape> ShapeList::last() const {
+    ERR_FAIL_COND_V_MSG(shapes.is_empty(), Ref<TopoShape>(), "ShapeList.last requires at least one shape.");
+    return shapes[shapes.size() - 1];
+}
+
+Vector3 ShapeList::center() const {
+    ERR_FAIL_COND_V_MSG(shapes.is_empty(), Vector3(), "ShapeList.center requires at least one shape.");
+
+    Vector3 total_center;
+    int64_t count = 0;
+    for (int64_t index = 0; index < shapes.size(); ++index) {
+        const Ref<TopoShape> shape = shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        total_center += shape_center(shape);
+        ++count;
+    }
+
+    ERR_FAIL_COND_V_MSG(count == 0, Vector3(), "ShapeList.center requires at least one non-null shape.");
+    return total_center / static_cast<real_t>(count);
+}
+
+Vector3 ShapeList::get_bounding_box_min() const {
+    ERR_FAIL_COND_V_MSG(shapes.is_empty(), Vector3(), "ShapeList.get_bounding_box_min requires at least one shape.");
+
+    bool initialized = false;
+    Vector3 minimum;
+    for (int64_t index = 0; index < shapes.size(); ++index) {
+        const Ref<TopoShape> shape = shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        const Vector3 shape_min = shape->get_bounding_box_min();
+        if (!initialized) {
+            minimum = shape_min;
+            initialized = true;
+            continue;
+        }
+        minimum.x = std::min(minimum.x, shape_min.x);
+        minimum.y = std::min(minimum.y, shape_min.y);
+        minimum.z = std::min(minimum.z, shape_min.z);
+    }
+
+    ERR_FAIL_COND_V_MSG(!initialized, Vector3(), "ShapeList.get_bounding_box_min requires at least one non-null shape.");
+    return minimum;
+}
+
+Vector3 ShapeList::get_bounding_box_max() const {
+    ERR_FAIL_COND_V_MSG(shapes.is_empty(), Vector3(), "ShapeList.get_bounding_box_max requires at least one shape.");
+
+    bool initialized = false;
+    Vector3 maximum;
+    for (int64_t index = 0; index < shapes.size(); ++index) {
+        const Ref<TopoShape> shape = shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        const Vector3 shape_max = shape->get_bounding_box_max();
+        if (!initialized) {
+            maximum = shape_max;
+            initialized = true;
+            continue;
+        }
+        maximum.x = std::max(maximum.x, shape_max.x);
+        maximum.y = std::max(maximum.y, shape_max.y);
+        maximum.z = std::max(maximum.z, shape_max.z);
+    }
+
+    ERR_FAIL_COND_V_MSG(!initialized, Vector3(), "ShapeList.get_bounding_box_max requires at least one non-null shape.");
+    return maximum;
+}
+
+Vector3 ShapeList::get_bounding_box_size() const {
+    return get_bounding_box_max() - get_bounding_box_min();
 }
 
 Ref<ShapeList> ShapeList::vertices() const {

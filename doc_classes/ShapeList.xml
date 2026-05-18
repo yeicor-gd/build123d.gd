@@ -39,6 +39,42 @@
 				Returns the list contents as a plain [Array].
 			</description>
 		</method>
+		<method name="first" qualifiers="const">
+			<return type="TopoShape" />
+			<description>
+				Returns the first shape in the list.
+			</description>
+		</method>
+		<method name="last" qualifiers="const">
+			<return type="TopoShape" />
+			<description>
+				Returns the last shape in the list.
+			</description>
+		</method>
+		<method name="center" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+				Returns the average center of the shapes in the list, using each shape's bounding-box center.
+			</description>
+		</method>
+		<method name="get_bounding_box_min" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+				Returns the minimum corner of the combined bounding box.
+			</description>
+		</method>
+		<method name="get_bounding_box_max" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+				Returns the maximum corner of the combined bounding box.
+			</description>
+		</method>
+		<method name="get_bounding_box_size" qualifiers="const">
+			<return type="Vector3" />
+			<description>
+				Returns the size of the combined bounding box.
+			</description>
+		</method>
 		<method name="vertices" qualifiers="const">
 			<return type="ShapeList" />
 			<description>

@@ -25,6 +25,12 @@ public:
     bool is_empty() const;
     godot::Ref<TopoShape> get_item(int64_t p_index) const;
     godot::Array to_array() const;
+    godot::Ref<TopoShape> first() const;
+    godot::Ref<TopoShape> last() const;
+    godot::Vector3 center() const;
+    godot::Vector3 get_bounding_box_min() const;
+    godot::Vector3 get_bounding_box_max() const;
+    godot::Vector3 get_bounding_box_size() const;
 
     godot::Ref<ShapeList> vertices() const;
     godot::Ref<ShapeList> edges() const;
