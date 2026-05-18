@@ -239,6 +239,13 @@
 				Groups shapes by volume. Each returned element is a [ShapeList] sorted by the grouping key.
 			</description>
 		</method>
+		<method name="group_by_shape_type" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="reverse" type="bool" default="false" />
+			<description>
+				Groups shapes by OCCT shape type name.
+			</description>
+		</method>
 		<method name="group_by" qualifiers="const">
 			<return type="Array" />
 			<param index="0" name="key_fn" type="Callable" />
@@ -275,6 +282,13 @@
 			<param index="0" name="reverse" type="bool" default="false" />
 			<description>
 				Sorts shapes that expose [method TopoShape.get_volume] by volume.
+			</description>
+		</method>
+		<method name="sort_by_shape_type" qualifiers="const">
+			<return type="ShapeList" />
+			<param index="0" name="reverse" type="bool" default="false" />
+			<description>
+				Sorts shapes by OCCT shape type name.
 			</description>
 		</method>
 		<method name="sort_by" qualifiers="const">

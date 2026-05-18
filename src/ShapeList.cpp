@@ -154,6 +154,22 @@ double callable_metric_value(const Ref<TopoShape> &p_shape, const Callable &p_ca
     return static_cast<double>(value);
 }
 
+double shape_type_rank(const Ref<TopoShape> &p_shape) {
+    ERR_FAIL_COND_V_MSG(p_shape.is_null() || p_shape->is_null(), 0.0, "ShapeList shape-type sorting requires a non-null shape.");
+
+    const String type_name = p_shape->get_shape_type_name();
+    if (type_name == "SHAPE") return 0.0;
+    if (type_name == "COMPOUND") return 1.0;
+    if (type_name == "COMPSOLID") return 2.0;
+    if (type_name == "SOLID") return 3.0;
+    if (type_name == "SHELL") return 4.0;
+    if (type_name == "FACE") return 5.0;
+    if (type_name == "WIRE") return 6.0;
+    if (type_name == "EDGE") return 7.0;
+    if (type_name == "VERTEX") return 8.0;
+    return 9.0;
+}
+
 double round_to_digits(double p_value, int64_t p_tol_digits) {
     const double factor = std::pow(10.0, static_cast<double>(std::max<int64_t>(0, p_tol_digits)));
     return std::round(p_value * factor) / factor;
@@ -242,6 +258,54 @@ Ref<ShapeList> sort_shapes_by_callable(const Array &p_shapes, const Callable &p_
     return shape_list_from_flattened(sorted);
 }
 
+Ref<ShapeList> sort_shapes_by_shape_type(const Array &p_shapes, bool p_reverse) {
+    std::vector<std::pair<double, Ref<TopoShape>>> ordered;
+    ordered.reserve(p_shapes.size());
+    for (int64_t index = 0; index < p_shapes.size(); ++index) {
+        const Ref<TopoShape> shape = p_shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        ordered.emplace_back(shape_type_rank(shape), shape);
+    }
+
+    std::sort(ordered.begin(), ordered.end(), [p_reverse](const auto &p_a, const auto &p_b) {
+        if (p_reverse) {
+            return p_a.first > p_b.first;
+        }
+        return p_a.first < p_b.first;
+    });
+
+    Array sorted;
+    for (const auto &entry : ordered) {
+        sorted.push_back(entry.second);
+    }
+    return shape_list_from_flattened(sorted);
+}
+
+Array group_shapes_by_shape_type(const Array &p_shapes, bool p_reverse) {
+    std::map<String, Array> groups;
+    for (int64_t index = 0; index < p_shapes.size(); ++index) {
+        const Ref<TopoShape> shape = p_shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        groups[shape->get_shape_type_name()].push_back(shape);
+    }
+
+    Array grouped;
+    if (p_reverse) {
+        for (auto it = groups.rbegin(); it != groups.rend(); ++it) {
+            grouped.push_back(shape_list_from_flattened(it->second));
+        }
+    } else {
+        for (const auto &entry : groups) {
+            grouped.push_back(shape_list_from_flattened(entry.second));
+        }
+    }
+    return grouped;
+}
+
 } // namespace
 
 void ShapeList::_bind_methods() {
@@ -276,11 +340,13 @@ void ShapeList::_bind_methods() {
     ClassDB::bind_method(D_METHOD("group_by_length", "reverse", "tol_digits"), &ShapeList::group_by_length, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("group_by_area", "reverse", "tol_digits"), &ShapeList::group_by_area, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("group_by_volume", "reverse", "tol_digits"), &ShapeList::group_by_volume, DEFVAL(false), DEFVAL(6));
+    ClassDB::bind_method(D_METHOD("group_by_shape_type", "reverse"), &ShapeList::group_by_shape_type, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("group_by", "key_fn", "reverse", "tol_digits"), &ShapeList::group_by, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("sort_by_axis", "axis", "reverse"), &ShapeList::sort_by_axis, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_length", "reverse"), &ShapeList::sort_by_length, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_area", "reverse"), &ShapeList::sort_by_area, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_volume", "reverse"), &ShapeList::sort_by_volume, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("sort_by_shape_type", "reverse"), &ShapeList::sort_by_shape_type, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by", "key_fn", "reverse"), &ShapeList::sort_by, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_distance", "other", "reverse"), &ShapeList::sort_by_distance, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_distance_to_point", "point", "reverse"), &ShapeList::sort_by_distance_to_point, DEFVAL(false));
@@ -658,6 +724,10 @@ Array ShapeList::group_by_volume(bool p_reverse, int64_t p_tol_digits) const {
     return group_shapes_by_metric(shapes, StringName("get_volume"), p_tol_digits, p_reverse);
 }
 
+Array ShapeList::group_by_shape_type(bool p_reverse) const {
+    return group_shapes_by_shape_type(shapes, p_reverse);
+}
+
 Array ShapeList::group_by(const Callable &p_group_by, bool p_reverse, int64_t p_tol_digits) const {
     return group_shapes_by_callable(shapes, p_group_by, p_tol_digits, p_reverse);
 }
@@ -705,6 +775,10 @@ Ref<ShapeList> ShapeList::sort_by_area(bool p_reverse) const {
 
 Ref<ShapeList> ShapeList::sort_by_volume(bool p_reverse) const {
     return sort_shapes_by_metric(shapes, StringName("get_volume"), p_reverse);
+}
+
+Ref<ShapeList> ShapeList::sort_by_shape_type(bool p_reverse) const {
+    return sort_shapes_by_shape_type(shapes, p_reverse);
 }
 
 Ref<ShapeList> ShapeList::sort_by(const Callable &p_sort_by, bool p_reverse) const {

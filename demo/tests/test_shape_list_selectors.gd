@@ -169,6 +169,33 @@ static func test_shape_list_position_and_distance() -> String:
 	if edge_type_filtered.size() != 2:
 		return "expected two edges but got %s" % edge_type_filtered.size()
 
+	var shape_type_shapes := ShapeList.new()
+	shape_type_shapes.append(face)
+	shape_type_shapes.append(plane_edge)
+	var shape_type_solid := SolidBox.new()
+	shape_type_solid.build_box(Vector3.ONE)
+	shape_type_shapes.append(shape_type_solid)
+	var shape_type_sorted := shape_type_shapes.sort_by_shape_type()
+	if shape_type_sorted.size() != 3:
+		return "unexpected shape-type sorted size: %s" % shape_type_sorted.size()
+	if shape_type_sorted.get_item(0).get_shape_type_name() != "SOLID":
+		return "sort_by_shape_type did not place the solid first"
+	if shape_type_sorted.get_item(2).get_shape_type_name() != "EDGE":
+		return "sort_by_shape_type did not place the edge last"
+	var shape_type_sorted_reverse := shape_type_shapes.sort_by_shape_type(true)
+	if shape_type_sorted_reverse.get_item(0).get_shape_type_name() != "EDGE":
+		return "reverse sort_by_shape_type did not place the edge first"
+
+	var shape_type_grouped := shape_type_shapes.group_by_shape_type()
+	if shape_type_grouped.size() != 3:
+		return "expected three shape-type groups but got %s" % shape_type_grouped.size()
+	if shape_type_grouped[0].get_item(0).get_shape_type_name() != "EDGE":
+		return "group_by_shape_type did not order groups by type name"
+	if shape_type_grouped[1].get_item(0).get_shape_type_name() != "FACE":
+		return "group_by_shape_type returned an unexpected middle group"
+	if shape_type_grouped[2].get_item(0).get_shape_type_name() != "SOLID":
+		return "group_by_shape_type returned an unexpected last group"
+
 	var axis_group_shapes := ShapeList.new()
 	var axis_group_a := SolidBox.new()
 	axis_group_a.build_box(Vector3.ONE, Vector3.ZERO)
