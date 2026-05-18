@@ -1,6 +1,7 @@
 #include "ShapeList.h"
 
 #include "Axis.h"
+#include "Plane.h"
 #include "TopoShape.h"
 
 #include <godot_cpp/core/error_macros.hpp>
@@ -31,6 +32,80 @@ Ref<ShapeList> shape_list_from_flattened(const Array &p_shapes) {
     return list;
 }
 
+double shape_metric_value(const Ref<TopoShape> &p_shape, const StringName &p_method_name) {
+    ERR_FAIL_COND_V_MSG(p_shape.is_null() || p_shape->is_null(), 0.0, "ShapeList metric evaluation requires a non-null shape.");
+    ERR_FAIL_COND_V_MSG(!p_shape->has_method(p_method_name), 0.0, "ShapeList metric evaluation requires a supported metric method.");
+
+    const Variant value = p_shape->call(p_method_name);
+    ERR_FAIL_COND_V_MSG(value.get_type() != Variant::FLOAT && value.get_type() != Variant::INT, 0.0, "ShapeList metric evaluation returned a non-numeric value.");
+    return static_cast<double>(value);
+}
+
+bool shape_matches_plane(const Ref<TopoShape> &p_shape, const Ref<CadPlane> &p_plane, double p_tolerance) {
+    ERR_FAIL_COND_V_MSG(p_plane.is_null(), false, "ShapeList.filter_by_plane requires a non-null plane.");
+    ERR_FAIL_COND_V_MSG(p_shape.is_null() || p_shape->is_null(), false, "ShapeList.filter_by_plane requires a non-null shape.");
+
+    const Vector3 plane_normal = p_plane->get_normal().normalized();
+    if (p_shape->has_method("get_normal")) {
+        const Vector3 normal = p_shape->call("get_normal");
+        if (normal.length() == 0.0) {
+            return false;
+        }
+        return std::abs(normal.normalized().dot(plane_normal)) >= 1.0 - p_tolerance;
+    }
+
+    if (p_shape->has_method("get_start_position") && p_shape->has_method("get_end_position")) {
+        const Vector3 start = p_shape->call("get_start_position");
+        const Vector3 end = p_shape->call("get_end_position");
+        const Vector3 direction = end - start;
+        if (direction.length() == 0.0) {
+            return false;
+        }
+        return std::abs(direction.normalized().dot(plane_normal)) <= p_tolerance;
+    }
+
+    if (p_shape->has_method("get_edges")) {
+        const Array edges = p_shape->call("get_edges");
+        if (edges.is_empty()) {
+            return false;
+        }
+        for (int64_t index = 0; index < edges.size(); ++index) {
+            const Ref<TopoShape> edge = edges[index];
+            if (!shape_matches_plane(edge, p_plane, p_tolerance)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    return false;
+}
+
+Ref<ShapeList> sort_shapes_by_metric(const Array &p_shapes, const StringName &p_method_name, bool p_reverse) {
+    std::vector<std::pair<double, Ref<TopoShape>>> ordered;
+    ordered.reserve(p_shapes.size());
+    for (int64_t index = 0; index < p_shapes.size(); ++index) {
+        const Ref<TopoShape> shape = p_shapes[index];
+        if (shape.is_null() || shape->is_null() || !shape->has_method(p_method_name)) {
+            continue;
+        }
+        ordered.emplace_back(shape_metric_value(shape, p_method_name), shape);
+    }
+
+    std::sort(ordered.begin(), ordered.end(), [p_reverse](const auto &p_a, const auto &p_b) {
+        if (p_reverse) {
+            return p_a.first > p_b.first;
+        }
+        return p_a.first < p_b.first;
+    });
+
+    Array sorted;
+    for (const auto &entry : ordered) {
+        sorted.push_back(entry.second);
+    }
+    return shape_list_from_flattened(sorted);
+}
+
 } // namespace
 
 void ShapeList::_bind_methods() {
@@ -54,7 +129,11 @@ void ShapeList::_bind_methods() {
     ClassDB::bind_method(D_METHOD("solids"), &ShapeList::solids);
     ClassDB::bind_method(D_METHOD("filter_by_position", "axis", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_position, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("filter_by_axis", "axis", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_axis, DEFVAL(true), DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("filter_by_plane", "plane", "reverse", "tolerance"), &ShapeList::filter_by_plane, DEFVAL(false), DEFVAL(1e-5));
     ClassDB::bind_method(D_METHOD("sort_by_axis", "axis", "reverse"), &ShapeList::sort_by_axis, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("sort_by_length", "reverse"), &ShapeList::sort_by_length, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("sort_by_area", "reverse"), &ShapeList::sort_by_area, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("sort_by_volume", "reverse"), &ShapeList::sort_by_volume, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_distance", "other", "reverse"), &ShapeList::sort_by_distance, DEFVAL(false));
 }
 
@@ -315,6 +394,24 @@ Ref<ShapeList> ShapeList::filter_by_axis(const Ref<Axis> &p_axis, double p_minim
     return filter_by_position(p_axis, p_minimum, p_maximum, p_min_inclusive, p_max_inclusive);
 }
 
+Ref<ShapeList> ShapeList::filter_by_plane(const Ref<CadPlane> &p_plane, bool p_reverse, double p_tolerance) const {
+    ERR_FAIL_COND_V_MSG(p_plane.is_null(), Ref<ShapeList>(), "ShapeList.filter_by_plane requires a non-null plane.");
+
+    Ref<ShapeList> result;
+    result.instantiate();
+    for (int64_t index = 0; index < shapes.size(); ++index) {
+        const Ref<TopoShape> shape = shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        const bool matches = shape_matches_plane(shape, p_plane, p_tolerance);
+        if (matches != p_reverse) {
+            result->append(shape);
+        }
+    }
+    return result;
+}
+
 Ref<ShapeList> ShapeList::sort_by_axis(const Ref<Axis> &p_axis, bool p_reverse) const {
     ERR_FAIL_COND_V_MSG(p_axis.is_null(), Ref<ShapeList>(), "ShapeList.sort_by_axis requires a non-null axis.");
 
@@ -346,6 +443,18 @@ Ref<ShapeList> ShapeList::sort_by_axis(const Ref<Axis> &p_axis, bool p_reverse) 
         sorted.push_back(entry.second);
     }
     return shape_list_from_flattened(sorted);
+}
+
+Ref<ShapeList> ShapeList::sort_by_length(bool p_reverse) const {
+    return sort_shapes_by_metric(shapes, StringName("get_length"), p_reverse);
+}
+
+Ref<ShapeList> ShapeList::sort_by_area(bool p_reverse) const {
+    return sort_shapes_by_metric(shapes, StringName("get_surface_area"), p_reverse);
+}
+
+Ref<ShapeList> ShapeList::sort_by_volume(bool p_reverse) const {
+    return sort_shapes_by_metric(shapes, StringName("get_volume"), p_reverse);
 }
 
 Ref<ShapeList> ShapeList::sort_by_distance(const Ref<TopoShape> &p_other, bool p_reverse) const {

@@ -139,12 +139,42 @@
 				Alias for [method filter_by_position] that uses the build123d-style axis terminology.
 			</description>
 		</method>
+		<method name="filter_by_plane" qualifiers="const">
+			<return type="ShapeList" />
+			<param index="0" name="plane" type="CadPlane" />
+			<param index="1" name="reverse" type="bool" default="false" />
+			<param index="2" name="tolerance" type="float" default="0.00001" />
+			<description>
+				Filters the list to shapes parallel to [param plane]. Faces are matched by normal, and edges and wires are matched by direction.
+			</description>
+		</method>
 		<method name="sort_by_axis" qualifiers="const">
 			<return type="ShapeList" />
 			<param index="0" name="axis" type="Axis" />
 			<param index="1" name="reverse" type="bool" default="false" />
 			<description>
 				Sorts the list by the center position of each shape along [param axis].
+			</description>
+		</method>
+		<method name="sort_by_length" qualifiers="const">
+			<return type="ShapeList" />
+			<param index="0" name="reverse" type="bool" default="false" />
+			<description>
+				Sorts shapes that expose [method Edge.get_length] by length.
+			</description>
+		</method>
+		<method name="sort_by_area" qualifiers="const">
+			<return type="ShapeList" />
+			<param index="0" name="reverse" type="bool" default="false" />
+			<description>
+				Sorts shapes that expose [method TopoShape.get_surface_area] by area.
+			</description>
+		</method>
+		<method name="sort_by_volume" qualifiers="const">
+			<return type="ShapeList" />
+			<param index="0" name="reverse" type="bool" default="false" />
+			<description>
+				Sorts shapes that expose [method TopoShape.get_volume] by volume.
 			</description>
 		</method>
 		<method name="sort_by_distance" qualifiers="const">

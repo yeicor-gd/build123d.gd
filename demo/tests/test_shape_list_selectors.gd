@@ -70,6 +70,49 @@ static func test_shape_list_position_and_distance() -> String:
 	if not _approx_vec(last.get_bounding_box_min(), Vector3(2.0, 0.0, 0.0), 0.001):
 		return "last did not return the last appended shape"
 
+	var plane := CadPlane.new()
+	plane.set_plane(Vector3.ZERO, Vector3.UP, Vector3.RIGHT)
+	var face := Face.new()
+	face.build_polygon(PackedVector3Array([
+		Vector3.ZERO,
+		Vector3.RIGHT,
+		Vector3(1.0, 1.0, 0.0),
+		Vector3.UP,
+	]), true)
+	var plane_edge := Edge.new()
+	plane_edge.build_line(Vector3.ZERO, Vector3.RIGHT)
+	var vertical_edge := Edge.new()
+	vertical_edge.build_line(Vector3.ZERO, Vector3.FORWARD)
+	var plane_shapes := ShapeList.new()
+	plane_shapes.append(face)
+	plane_shapes.append(plane_edge)
+	plane_shapes.append(vertical_edge)
+	var filtered_plane := plane_shapes.filter_by_plane(plane)
+	if filtered_plane.size() != 2:
+		return "expected 2 plane-filtered shapes but got %s" % filtered_plane.size()
+
+	var short_edge := Edge.new()
+	short_edge.build_line(Vector3.ZERO, Vector3.RIGHT)
+	var long_edge := Edge.new()
+	long_edge.build_line(Vector3.ZERO, Vector3.RIGHT * 2.0)
+	var length_shapes := ShapeList.new()
+	length_shapes.append(long_edge)
+	length_shapes.append(short_edge)
+	var sorted_length := length_shapes.sort_by_length()
+	if not _approx(sorted_length.get_item(0).get_length(), 1.0, 0.001):
+		return "sort_by_length did not place the shorter edge first"
+
+	var small_box := SolidBox.new()
+	small_box.build_box(Vector3.ONE)
+	var large_box := SolidBox.new()
+	large_box.build_box(Vector3(2.0, 2.0, 2.0))
+	var volume_shapes := ShapeList.new()
+	volume_shapes.append(large_box)
+	volume_shapes.append(small_box)
+	var sorted_volume := volume_shapes.sort_by_volume()
+	if not _approx(sorted_volume.get_item(0).get_volume(), 1.0, 0.001):
+		return "sort_by_volume did not place the smaller box first"
+
 	var expanded := shapes.solids()
 	if expanded.size() != 3:
 		return "expected solids() to preserve all solids but got %s" % expanded.size()

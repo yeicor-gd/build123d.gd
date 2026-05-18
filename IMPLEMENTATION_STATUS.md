@@ -20,7 +20,7 @@ This repository is being extended toward build123d-style CAD functionality on to
 - Profile primitives: `RectangleWire`, `RectangleRoundedWire`, `CircleWire`, `EllipseWire`, `RegularPolygonWire`, `SlotOverallWire`, `PolygonWire`
 - Shape operations: translate, rotate, scale, mirror, locate, extrude, revolve, loft, sweep, and 2D offset
 - Boolean operations: pairwise fuse, cut, common, plus array-based multi-shape helpers
-- Measurements and inspection: volume, surface area, center of mass, bounds, typed topology extraction, edge sampling, and the first ShapeList selector and discovery helpers
+- Measurements and inspection: volume, surface area, center of mass, bounds, typed topology extraction, edge sampling, and the ShapeList selector and discovery helpers
 - Import/export: STEP and STL file and byte round-trips
 - Mesh conversion: `TopoShape.to_array_mesh()`
 - Registration regeneration: `src/register_types.sh`

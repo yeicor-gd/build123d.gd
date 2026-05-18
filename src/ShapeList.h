@@ -8,6 +8,7 @@
 
 class TopoShape;
 class Axis;
+class CadPlane;
 
 class ShapeList : public godot::RefCounted {
     GDCLASS(ShapeList, godot::RefCounted)
@@ -42,7 +43,11 @@ public:
 
     godot::Ref<ShapeList> filter_by_position(const godot::Ref<Axis> &p_axis, double p_minimum, double p_maximum, bool p_min_inclusive = true, bool p_max_inclusive = true) const;
     godot::Ref<ShapeList> filter_by_axis(const godot::Ref<Axis> &p_axis, double p_minimum, double p_maximum, bool p_min_inclusive = true, bool p_max_inclusive = true) const;
+    godot::Ref<ShapeList> filter_by_plane(const godot::Ref<CadPlane> &p_plane, bool p_reverse = false, double p_tolerance = 1e-5) const;
     godot::Ref<ShapeList> sort_by_axis(const godot::Ref<Axis> &p_axis, bool p_reverse = false) const;
+    godot::Ref<ShapeList> sort_by_length(bool p_reverse = false) const;
+    godot::Ref<ShapeList> sort_by_area(bool p_reverse = false) const;
+    godot::Ref<ShapeList> sort_by_volume(bool p_reverse = false) const;
     godot::Ref<ShapeList> sort_by_distance(const godot::Ref<TopoShape> &p_other, bool p_reverse = false) const;
 };
 
