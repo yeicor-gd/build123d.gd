@@ -9,6 +9,18 @@ static func _approx_vec(a: Vector3, b: Vector3, epsilon := 0.001) -> bool:
 	return _approx(a.x, b.x, epsilon) and _approx(a.y, b.y, epsilon) and _approx(a.z, b.z, epsilon)
 
 
+func _is_right_of_origin(shape: TopoShape) -> bool:
+	return shape.get_center_of_mass().x > 1.0
+
+
+func _sort_by_center_x(shape: TopoShape) -> float:
+	return shape.get_center_of_mass().x
+
+
+func _group_by_center_x(shape: TopoShape) -> float:
+	return shape.get_center_of_mass().x
+
+
 static func test_shape_list_position_and_distance() -> String:
 	var left := SolidBox.new()
 	left.build_box(Vector3.ONE, Vector3.ZERO)
@@ -166,6 +178,23 @@ static func test_shape_list_position_and_distance() -> String:
 		return "expected two volume groups but got %s" % grouped_volume.size()
 	if grouped_volume[0].size() != 1 or grouped_volume[1].size() != 1:
 		return "unexpected volume grouping sizes: %s / %s" % [grouped_volume[0].size(), grouped_volume[1].size()]
+
+	var helper := TestShapeListSelectors.new()
+	var callable_filtered := shapes.filter_by(Callable(helper, "_is_right_of_origin"))
+	if callable_filtered.size() != 2:
+		return "expected two callable-filtered shapes but got %s" % callable_filtered.size()
+
+	var callable_sorted := shapes.sort_by(Callable(helper, "_sort_by_center_x"))
+	if callable_sorted.size() != 3:
+		return "unexpected callable-sorted size: %s" % callable_sorted.size()
+	if not _approx(callable_sorted.get_item(0).get_center_of_mass().x, 0.5, 0.02):
+		return "sort_by callable did not place the leftmost shape first"
+
+	var callable_grouped := axis_group_shapes.group_by(Callable(helper, "_group_by_center_x"))
+	if callable_grouped.size() != 2:
+		return "expected two callable groups but got %s" % callable_grouped.size()
+	if callable_grouped[0].size() != 2 or callable_grouped[1].size() != 1:
+		return "unexpected callable grouping sizes: %s / %s" % [callable_grouped[0].size(), callable_grouped[1].size()]
 
 	var expanded := shapes.solids()
 	if expanded.size() != 3:

@@ -5,6 +5,7 @@
 #include <godot_cpp/classes/ref_counted.hpp>
 #include <godot_cpp/core/class_db.hpp>
 #include <godot_cpp/variant/array.hpp>
+#include <godot_cpp/variant/variant.hpp>
 
 class TopoShape;
 class Axis;
@@ -47,14 +48,17 @@ public:
     godot::Ref<ShapeList> filter_by_length(double p_minimum, double p_maximum, bool p_min_inclusive = true, bool p_max_inclusive = true) const;
     godot::Ref<ShapeList> filter_by_area(double p_minimum, double p_maximum, bool p_min_inclusive = true, bool p_max_inclusive = true) const;
     godot::Ref<ShapeList> filter_by_volume(double p_minimum, double p_maximum, bool p_min_inclusive = true, bool p_max_inclusive = true) const;
+    godot::Ref<ShapeList> filter_by(const godot::Callable &p_filter_by, bool p_reverse = false, double p_tolerance = 1e-5) const;
     godot::Array group_by_axis(const godot::Ref<Axis> &p_axis, bool p_reverse = false, int64_t p_tol_digits = 6) const;
     godot::Array group_by_length(bool p_reverse = false, int64_t p_tol_digits = 6) const;
     godot::Array group_by_area(bool p_reverse = false, int64_t p_tol_digits = 6) const;
     godot::Array group_by_volume(bool p_reverse = false, int64_t p_tol_digits = 6) const;
+    godot::Array group_by(const godot::Callable &p_group_by, bool p_reverse = false, int64_t p_tol_digits = 6) const;
     godot::Ref<ShapeList> sort_by_axis(const godot::Ref<Axis> &p_axis, bool p_reverse = false) const;
     godot::Ref<ShapeList> sort_by_length(bool p_reverse = false) const;
     godot::Ref<ShapeList> sort_by_area(bool p_reverse = false) const;
     godot::Ref<ShapeList> sort_by_volume(bool p_reverse = false) const;
+    godot::Ref<ShapeList> sort_by(const godot::Callable &p_sort_by, bool p_reverse = false) const;
     godot::Ref<ShapeList> sort_by_distance(const godot::Ref<TopoShape> &p_other, bool p_reverse = false) const;
 };
 

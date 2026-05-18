@@ -129,6 +129,24 @@ Ref<ShapeList> filter_shapes_by_metric(const Array &p_shapes, const StringName &
     return result;
 }
 
+bool callable_predicate_matches(const Ref<TopoShape> &p_shape, const Callable &p_callable) {
+    ERR_FAIL_COND_V_MSG(p_shape.is_null() || p_shape->is_null(), false, "ShapeList.filter_by requires a non-null shape.");
+    ERR_FAIL_COND_V_MSG(!p_callable.is_valid(), false, "ShapeList.filter_by requires a valid callable.");
+
+    const Variant value = p_callable.call(p_shape);
+    ERR_FAIL_COND_V_MSG(value.get_type() != Variant::BOOL, false, "ShapeList.filter_by callable must return a bool.");
+    return value;
+}
+
+double callable_metric_value(const Ref<TopoShape> &p_shape, const Callable &p_callable) {
+    ERR_FAIL_COND_V_MSG(p_shape.is_null() || p_shape->is_null(), 0.0, "ShapeList sort/group callable requires a non-null shape.");
+    ERR_FAIL_COND_V_MSG(!p_callable.is_valid(), 0.0, "ShapeList sort/group callable requires a valid callable.");
+
+    const Variant value = p_callable.call(p_shape);
+    ERR_FAIL_COND_V_MSG(value.get_type() != Variant::FLOAT && value.get_type() != Variant::INT, 0.0, "ShapeList sort/group callable must return a numeric value.");
+    return static_cast<double>(value);
+}
+
 double round_to_digits(double p_value, int64_t p_tol_digits) {
     const double factor = std::pow(10.0, static_cast<double>(std::max<int64_t>(0, p_tol_digits)));
     return std::round(p_value * factor) / factor;
@@ -175,6 +193,48 @@ Array group_shapes_by_metric(const Array &p_shapes, const StringName &p_method_n
     return grouped_shape_arrays_from_map(groups, p_reverse);
 }
 
+Array group_shapes_by_callable(const Array &p_shapes, const Callable &p_callable, int64_t p_tol_digits, bool p_reverse) {
+    ERR_FAIL_COND_V_MSG(!p_callable.is_valid(), Array(), "ShapeList.group_by requires a valid callable.");
+
+    std::map<double, Array> groups;
+    for (int64_t index = 0; index < p_shapes.size(); ++index) {
+        const Ref<TopoShape> shape = p_shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        const double key = round_to_digits(callable_metric_value(shape, p_callable), p_tol_digits);
+        groups[key].push_back(shape);
+    }
+    return grouped_shape_arrays_from_map(groups, p_reverse);
+}
+
+Ref<ShapeList> sort_shapes_by_callable(const Array &p_shapes, const Callable &p_callable, bool p_reverse) {
+    ERR_FAIL_COND_V_MSG(!p_callable.is_valid(), Ref<ShapeList>(), "ShapeList.sort_by requires a valid callable.");
+
+    std::vector<std::pair<double, Ref<TopoShape>>> ordered;
+    ordered.reserve(p_shapes.size());
+    for (int64_t index = 0; index < p_shapes.size(); ++index) {
+        const Ref<TopoShape> shape = p_shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        ordered.emplace_back(callable_metric_value(shape, p_callable), shape);
+    }
+
+    std::sort(ordered.begin(), ordered.end(), [p_reverse](const auto &p_a, const auto &p_b) {
+        if (p_reverse) {
+            return p_a.first > p_b.first;
+        }
+        return p_a.first < p_b.first;
+    });
+
+    Array sorted;
+    for (const auto &entry : ordered) {
+        sorted.push_back(entry.second);
+    }
+    return shape_list_from_flattened(sorted);
+}
+
 } // namespace
 
 void ShapeList::_bind_methods() {
@@ -202,14 +262,17 @@ void ShapeList::_bind_methods() {
     ClassDB::bind_method(D_METHOD("filter_by_length", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_length, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("filter_by_area", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_area, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("filter_by_volume", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_volume, DEFVAL(true), DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("filter_by", "predicate", "reverse", "tolerance"), &ShapeList::filter_by, DEFVAL(false), DEFVAL(1e-5));
     ClassDB::bind_method(D_METHOD("group_by_axis", "axis", "reverse", "tol_digits"), &ShapeList::group_by_axis, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("group_by_length", "reverse", "tol_digits"), &ShapeList::group_by_length, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("group_by_area", "reverse", "tol_digits"), &ShapeList::group_by_area, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("group_by_volume", "reverse", "tol_digits"), &ShapeList::group_by_volume, DEFVAL(false), DEFVAL(6));
+    ClassDB::bind_method(D_METHOD("group_by", "key_fn", "reverse", "tol_digits"), &ShapeList::group_by, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("sort_by_axis", "axis", "reverse"), &ShapeList::sort_by_axis, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_length", "reverse"), &ShapeList::sort_by_length, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_area", "reverse"), &ShapeList::sort_by_area, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_volume", "reverse"), &ShapeList::sort_by_volume, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("sort_by", "key_fn", "reverse"), &ShapeList::sort_by, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_distance", "other", "reverse"), &ShapeList::sort_by_distance, DEFVAL(false));
 }
 
@@ -500,6 +563,25 @@ Ref<ShapeList> ShapeList::filter_by_volume(double p_minimum, double p_maximum, b
     return filter_shapes_by_metric(shapes, StringName("get_volume"), p_minimum, p_maximum, p_min_inclusive, p_max_inclusive);
 }
 
+Ref<ShapeList> ShapeList::filter_by(const Callable &p_filter_by, bool p_reverse, double p_tolerance) const {
+    ERR_FAIL_COND_V_MSG(!p_filter_by.is_valid(), Ref<ShapeList>(), "ShapeList.filter_by requires a valid callable.");
+    (void)p_tolerance;
+
+    Ref<ShapeList> result;
+    result.instantiate();
+    for (int64_t index = 0; index < shapes.size(); ++index) {
+        const Ref<TopoShape> shape = shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        const bool matches = callable_predicate_matches(shape, p_filter_by);
+        if (matches != p_reverse) {
+            result->append(shape);
+        }
+    }
+    return result;
+}
+
 Array ShapeList::group_by_axis(const Ref<Axis> &p_axis, bool p_reverse, int64_t p_tol_digits) const {
     ERR_FAIL_COND_V_MSG(p_axis.is_null(), Array(), "ShapeList.group_by_axis requires a non-null axis.");
 
@@ -526,6 +608,10 @@ Array ShapeList::group_by_area(bool p_reverse, int64_t p_tol_digits) const {
 
 Array ShapeList::group_by_volume(bool p_reverse, int64_t p_tol_digits) const {
     return group_shapes_by_metric(shapes, StringName("get_volume"), p_tol_digits, p_reverse);
+}
+
+Array ShapeList::group_by(const Callable &p_group_by, bool p_reverse, int64_t p_tol_digits) const {
+    return group_shapes_by_callable(shapes, p_group_by, p_tol_digits, p_reverse);
 }
 
 Ref<ShapeList> ShapeList::sort_by_axis(const Ref<Axis> &p_axis, bool p_reverse) const {
@@ -571,6 +657,10 @@ Ref<ShapeList> ShapeList::sort_by_area(bool p_reverse) const {
 
 Ref<ShapeList> ShapeList::sort_by_volume(bool p_reverse) const {
     return sort_shapes_by_metric(shapes, StringName("get_volume"), p_reverse);
+}
+
+Ref<ShapeList> ShapeList::sort_by(const Callable &p_sort_by, bool p_reverse) const {
+    return sort_shapes_by_callable(shapes, p_sort_by, p_reverse);
 }
 
 Ref<ShapeList> ShapeList::sort_by_distance(const Ref<TopoShape> &p_other, bool p_reverse) const {
