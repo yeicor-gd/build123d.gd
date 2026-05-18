@@ -113,6 +113,24 @@ static func test_shape_list_position_and_distance() -> String:
 	if not _approx(sorted_volume.get_item(0).get_volume(), 1.0, 0.001):
 		return "sort_by_volume did not place the smaller box first"
 
+	var length_filtered := length_shapes.filter_by_length(1.1, 2.1)
+	if length_filtered.size() != 1:
+		return "expected one length-filtered edge but got %s" % length_filtered.size()
+	if not _approx(length_filtered.get_item(0).get_length(), 2.0, 0.001):
+		return "filter_by_length returned the wrong edge"
+
+	var area_filtered := volume_shapes.filter_by_area(20.0, 30.0)
+	if area_filtered.size() != 1:
+		return "expected one area-filtered shape but got %s" % area_filtered.size()
+	if not _approx(area_filtered.get_item(0).get_surface_area(), 24.0, 0.001):
+		return "filter_by_area returned the wrong box"
+
+	var volume_filtered := volume_shapes.filter_by_volume(0.5, 1.5)
+	if volume_filtered.size() != 1:
+		return "expected one volume-filtered shape but got %s" % volume_filtered.size()
+	if not _approx(volume_filtered.get_item(0).get_volume(), 1.0, 0.001):
+		return "filter_by_volume returned the wrong box"
+
 	var expanded := shapes.solids()
 	if expanded.size() != 3:
 		return "expected solids() to preserve all solids but got %s" % expanded.size()

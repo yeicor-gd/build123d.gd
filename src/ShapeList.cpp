@@ -106,6 +106,27 @@ Ref<ShapeList> sort_shapes_by_metric(const Array &p_shapes, const StringName &p_
     return shape_list_from_flattened(sorted);
 }
 
+Ref<ShapeList> filter_shapes_by_metric(const Array &p_shapes, const StringName &p_method_name, double p_minimum, double p_maximum, bool p_min_inclusive, bool p_max_inclusive) {
+    ERR_FAIL_COND_V_MSG(p_minimum > p_maximum, Ref<ShapeList>(), "ShapeList metric filtering requires minimum <= maximum.");
+
+    Ref<ShapeList> result;
+    result.instantiate();
+    for (int64_t index = 0; index < p_shapes.size(); ++index) {
+        const Ref<TopoShape> shape = p_shapes[index];
+        if (shape.is_null() || shape->is_null() || !shape->has_method(p_method_name)) {
+            continue;
+        }
+
+        const double value = shape_metric_value(shape, p_method_name);
+        const bool above_min = p_min_inclusive ? value >= p_minimum : value > p_minimum;
+        const bool below_max = p_max_inclusive ? value <= p_maximum : value < p_maximum;
+        if (above_min && below_max) {
+            result->append(shape);
+        }
+    }
+    return result;
+}
+
 } // namespace
 
 void ShapeList::_bind_methods() {
@@ -130,6 +151,9 @@ void ShapeList::_bind_methods() {
     ClassDB::bind_method(D_METHOD("filter_by_position", "axis", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_position, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("filter_by_axis", "axis", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_axis, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("filter_by_plane", "plane", "reverse", "tolerance"), &ShapeList::filter_by_plane, DEFVAL(false), DEFVAL(1e-5));
+    ClassDB::bind_method(D_METHOD("filter_by_length", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_length, DEFVAL(true), DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("filter_by_area", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_area, DEFVAL(true), DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("filter_by_volume", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_volume, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("sort_by_axis", "axis", "reverse"), &ShapeList::sort_by_axis, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_length", "reverse"), &ShapeList::sort_by_length, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_area", "reverse"), &ShapeList::sort_by_area, DEFVAL(false));
@@ -410,6 +434,18 @@ Ref<ShapeList> ShapeList::filter_by_plane(const Ref<CadPlane> &p_plane, bool p_r
         }
     }
     return result;
+}
+
+Ref<ShapeList> ShapeList::filter_by_length(double p_minimum, double p_maximum, bool p_min_inclusive, bool p_max_inclusive) const {
+    return filter_shapes_by_metric(shapes, StringName("get_length"), p_minimum, p_maximum, p_min_inclusive, p_max_inclusive);
+}
+
+Ref<ShapeList> ShapeList::filter_by_area(double p_minimum, double p_maximum, bool p_min_inclusive, bool p_max_inclusive) const {
+    return filter_shapes_by_metric(shapes, StringName("get_surface_area"), p_minimum, p_maximum, p_min_inclusive, p_max_inclusive);
+}
+
+Ref<ShapeList> ShapeList::filter_by_volume(double p_minimum, double p_maximum, bool p_min_inclusive, bool p_max_inclusive) const {
+    return filter_shapes_by_metric(shapes, StringName("get_volume"), p_minimum, p_maximum, p_min_inclusive, p_max_inclusive);
 }
 
 Ref<ShapeList> ShapeList::sort_by_axis(const Ref<Axis> &p_axis, bool p_reverse) const {
