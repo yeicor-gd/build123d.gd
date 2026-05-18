@@ -187,7 +187,10 @@ Ref<Wire> Wire::offset_2d(double p_distance) const {
                 }
                 ++wire_count;
             }
-            ERR_FAIL_COND_V_MSG(wire_count != 1 || first_wire.IsNull(), Ref<Wire>(), "Wire.offset_2d expected a single wire result.");
+            if (wire_count == 0 || first_wire.IsNull()) {
+                return Ref<Wire>();
+            }
+            ERR_FAIL_COND_V_MSG(wire_count != 1, Ref<Wire>(), "Wire.offset_2d expected a single wire result.");
             result = first_wire;
         }
 

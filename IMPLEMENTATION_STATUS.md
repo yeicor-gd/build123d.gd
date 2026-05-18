@@ -103,6 +103,7 @@ Implemented in progress:
 - `Wire.offset_2d(distance)` for planar profile growth and shrink operations
 - `Face` wrapper with wire/polygon construction, planarity checks, outer-wire extraction, and representative normal access
 - `Face.build_from_wires(outer, inner_wires, only_plane)` and `Face.get_inner_wires()` for planar faces with hole boundaries
+- `Face.offset_2d(distance)` for planar face growth and shrink operations, including hole-aware offsets
 - `Shell` wrapper with closure and face-count inspection
 - `Compound` wrapper with child-shape construction and direct child-count inspection
 - `Solid` wrapper with closure and shell-count inspection, now serving as the common base for solid primitives
@@ -148,6 +149,7 @@ Planned validation:
 - wire construction and wire extraction tests
 - face construction and face extraction tests
 - face construction with inner wires and holed feature tests
+- planar face offset tests
 - shell extraction and shell-wrapper tests
 - compound construction and compound extraction tests
 - solid extraction and solid-wrapper tests

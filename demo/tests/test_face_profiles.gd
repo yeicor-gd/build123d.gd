@@ -54,3 +54,28 @@ static func test_face_with_inner_wires() -> String:
 		return "unexpected extruded holed face bounds size: %s" % str(solid.get_bounding_box_size())
 
 	return ""
+
+
+static func test_face_offset_2d() -> String:
+	var outer := RectangleWire.new()
+	outer.build_rectangle(Vector2(6.0, 6.0))
+
+	var hole := CircleWire.new()
+	hole.build_circle(1.0)
+
+	var face := Face.new()
+	face.build_from_wires(outer, [hole], true)
+
+	var offset := face.offset_2d(1.0)
+	if offset == null or offset.is_null():
+		return "face offset returned null"
+	if not offset.is_planar():
+		return "offset face was not planar"
+	if offset.get_inner_wires().size() != 0:
+		return "expected the small hole to collapse away after outward offset"
+	if not _approx(offset.get_surface_area(), 60.0 + PI, 0.08):
+		return "unexpected offset face area: %s" % offset.get_surface_area()
+	if not _approx_vec(offset.get_bounding_box_size(), Vector3(8.0, 8.0, 0.0), 0.03):
+		return "unexpected offset face bounds size: %s" % str(offset.get_bounding_box_size())
+
+	return ""

@@ -50,6 +50,7 @@ void Face::_bind_methods() {
     ClassDB::bind_method(D_METHOD("build_from_wire", "wire", "only_plane"), &Face::build_from_wire, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("build_from_wires", "outer_wire", "inner_wires", "only_plane"), &Face::build_from_wires, DEFVAL(Array()), DEFVAL(false));
     ClassDB::bind_method(D_METHOD("build_polygon", "points", "only_plane"), &Face::build_polygon, DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("offset_2d", "distance"), &Face::offset_2d);
     ClassDB::bind_method(D_METHOD("extruded", "direction"), &Face::extruded);
     ClassDB::bind_method(D_METHOD("revolved", "axis", "angle_radians"), &Face::revolved, DEFVAL(6.28318530717958647692));
     ClassDB::bind_method(D_METHOD("is_planar"), &Face::is_planar);
@@ -93,6 +94,48 @@ void Face::build_polygon(const PackedVector3Array &p_points, bool p_only_plane) 
         set_occt_shape(face_builder.Shape());
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<Face> Face::offset_2d(double p_distance) const {
+    ERR_FAIL_COND_V_MSG(is_null(), Ref<Face>(), "Face.offset_2d requires a non-null face.");
+    ERR_FAIL_COND_V_MSG(p_distance == 0.0, Ref<Face>(), "Face.offset_2d requires a non-zero distance.");
+    ERR_FAIL_COND_V_MSG(!is_planar(), Ref<Face>(), "Face.offset_2d currently requires a planar face.");
+
+    try {
+        const Vector3 source_normal = get_normal();
+        Ref<Wire> outer_wire = get_outer_wire();
+        ERR_FAIL_COND_V_MSG(outer_wire.is_null() || outer_wire->is_null(), Ref<Face>(), "Face.offset_2d requires a valid outer wire.");
+
+        Ref<Wire> offset_outer_wire = outer_wire->offset_2d(p_distance);
+        ERR_FAIL_COND_V_MSG(offset_outer_wire.is_null() || offset_outer_wire->is_null(), Ref<Face>(), "Face.offset_2d could not offset the outer wire.");
+
+        Array offset_inner_wires;
+        const Array inner_wires = get_inner_wires();
+        for (int64_t index = 0; index < inner_wires.size(); ++index) {
+            const Ref<Wire> inner_wire = inner_wires[index];
+            if (inner_wire.is_null() || inner_wire->is_null()) {
+                continue;
+            }
+
+            Ref<Wire> offset_inner_wire = inner_wire->offset_2d(-p_distance);
+            if (offset_inner_wire.is_null() || offset_inner_wire->is_null()) {
+                continue;
+            }
+            offset_inner_wires.push_back(offset_inner_wire);
+        }
+
+        Ref<Face> result;
+        result.instantiate();
+        result->build_from_wires(offset_outer_wire, offset_inner_wires, true);
+
+        if (result->get_normal().dot(source_normal) < 0.0f) {
+            result->set_occt_shape(TopoDS::Face(result->get_occt_shape().Reversed()));
+        }
+
+        return result;
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<Face>(), occt_utils::exception_to_string(failure));
     }
 }
 

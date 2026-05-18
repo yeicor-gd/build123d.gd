@@ -32,6 +32,13 @@
 				Builds a closed polygonal face through [param points].
 			</description>
 		</method>
+		<method name="offset_2d" qualifiers="const">
+			<return type="Face" />
+			<param index="0" name="distance" type="float" />
+			<description>
+				Builds a planar 2D offset of this face by [param distance]. The outer boundary is offset by [param distance] and hole boundaries are offset by the opposite amount.
+			</description>
+		</method>
 		<method name="extruded" qualifiers="const">
 			<return type="Solid" />
 			<param index="0" name="direction" type="Vector3" />
