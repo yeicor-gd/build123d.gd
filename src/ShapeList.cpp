@@ -269,6 +269,7 @@ void ShapeList::_bind_methods() {
     ClassDB::bind_method(D_METHOD("filter_by_length", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_length, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("filter_by_area", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_area, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("filter_by_volume", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_volume, DEFVAL(true), DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("filter_by_distance_to_point", "point", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_distance_to_point, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("filter_by_shape_type", "shape_type_name", "reverse"), &ShapeList::filter_by_shape_type, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("filter_by", "predicate", "reverse", "tolerance"), &ShapeList::filter_by, DEFVAL(false), DEFVAL(1e-5));
     ClassDB::bind_method(D_METHOD("group_by_axis", "axis", "reverse", "tol_digits"), &ShapeList::group_by_axis, DEFVAL(false), DEFVAL(6));
@@ -570,6 +571,26 @@ Ref<ShapeList> ShapeList::filter_by_area(double p_minimum, double p_maximum, boo
 
 Ref<ShapeList> ShapeList::filter_by_volume(double p_minimum, double p_maximum, bool p_min_inclusive, bool p_max_inclusive) const {
     return filter_shapes_by_metric(shapes, StringName("get_volume"), p_minimum, p_maximum, p_min_inclusive, p_max_inclusive);
+}
+
+Ref<ShapeList> ShapeList::filter_by_distance_to_point(const Vector3 &p_point, double p_minimum, double p_maximum, bool p_min_inclusive, bool p_max_inclusive) const {
+    ERR_FAIL_COND_V_MSG(p_minimum > p_maximum, Ref<ShapeList>(), "ShapeList.filter_by_distance_to_point requires minimum <= maximum.");
+
+    Ref<ShapeList> result;
+    result.instantiate();
+    for (int64_t index = 0; index < shapes.size(); ++index) {
+        const Ref<TopoShape> shape = shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        const double distance = shape_center(shape).distance_to(p_point);
+        const bool above_min = p_min_inclusive ? distance >= p_minimum : distance > p_minimum;
+        const bool below_max = p_max_inclusive ? distance <= p_maximum : distance < p_maximum;
+        if (above_min && below_max) {
+            result->append(shape);
+        }
+    }
+    return result;
 }
 
 Ref<ShapeList> ShapeList::filter_by_shape_type(const String &p_shape_type_name, bool p_reverse) const {

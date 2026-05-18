@@ -149,6 +149,16 @@ static func test_shape_list_position_and_distance() -> String:
 	if not _approx(volume_filtered.get_item(0).get_volume(), 1.0, 0.001):
 		return "filter_by_volume returned the wrong box"
 
+	var point_filtered := shapes.filter_by_distance_to_point(Vector3.ZERO, 0.0, 1.0)
+	if point_filtered.size() != 1:
+		return "expected one point-filtered shape but got %s" % point_filtered.size()
+	if not _approx(point_filtered.get_item(0).get_center_of_mass().x, 0.5, 0.02):
+		return "filter_by_distance_to_point returned the wrong shape"
+
+	var point_filtered_exclusive := shapes.filter_by_distance_to_point(Vector3.ZERO, 0.0, 0.4, false, false)
+	if point_filtered_exclusive.size() != 0:
+		return "expected no exclusive point-filtered shapes but got %s" % point_filtered_exclusive.size()
+
 	var shape_type_filtered := shapes.filter_by_shape_type("SOLID")
 	if shape_type_filtered.size() != 3:
 		return "expected three solid shapes but got %s" % shape_type_filtered.size()
