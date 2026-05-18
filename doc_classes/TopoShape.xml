@@ -40,6 +40,27 @@
 				Returns the intersection between this shape and [param other].
 			</description>
 		</method>
+		<method name="fuse_all" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="shapes" type="Array" />
+			<description>
+				Fuses this shape with every non-null [TopoShape] in [param shapes] from left to right. Returns a copy of this shape when [param shapes] is empty.
+			</description>
+		</method>
+		<method name="cut_all" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="shapes" type="Array" />
+			<description>
+				Cuts every non-null [TopoShape] in [param shapes] from this shape from left to right. Returns a copy of this shape when [param shapes] is empty.
+			</description>
+		</method>
+		<method name="common_all" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="shapes" type="Array" />
+			<description>
+				Computes the intersection of this shape with every non-null [TopoShape] in [param shapes] from left to right. Returns a copy of this shape when [param shapes] is empty.
+			</description>
+		</method>
 		<method name="translated" qualifiers="const">
 			<return type="TopoShape" />
 			<param index="0" name="offset" type="Vector3" />

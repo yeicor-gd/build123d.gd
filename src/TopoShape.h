@@ -41,6 +41,9 @@ public:
     godot::Ref<TopoShape> fuse(const godot::Ref<TopoShape> &p_other) const;
     godot::Ref<TopoShape> cut(const godot::Ref<TopoShape> &p_other) const;
     godot::Ref<TopoShape> common(const godot::Ref<TopoShape> &p_other) const;
+    godot::Ref<TopoShape> fuse_all(const godot::Array &p_shapes) const;
+    godot::Ref<TopoShape> cut_all(const godot::Array &p_shapes) const;
+    godot::Ref<TopoShape> common_all(const godot::Array &p_shapes) const;
     godot::Ref<TopoShape> translated(const godot::Vector3 &p_offset) const;
     godot::Ref<TopoShape> rotated(const godot::Vector3 &p_axis_origin, const godot::Vector3 &p_axis_direction, double p_angle_radians) const;
     godot::Ref<TopoShape> scaled(const godot::Vector3 &p_center, double p_factor) const;

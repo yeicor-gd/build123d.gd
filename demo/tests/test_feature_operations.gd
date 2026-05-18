@@ -149,3 +149,38 @@ static func test_wire_sweep() -> String:
 		return "expected sweep to expose 1 solid but got %s" % solids.size()
 
 	return ""
+
+
+static func test_boolean_sequence_helpers() -> String:
+	var base := SolidBox.new()
+	base.build_box(Vector3.ONE)
+
+	var shifted := SolidBox.new()
+	shifted.build_box(Vector3.ONE, Vector3(0.5, 0.0, 0.0))
+
+	var fused: TopoShape = base.fuse_all([shifted])
+	if fused == null or fused.is_null():
+		return "fuse_all returned null"
+	if not _approx(fused.get_volume(), 1.5, 0.02):
+		return "unexpected fuse_all volume: %s" % fused.get_volume()
+	if not _approx_vec(fused.get_bounding_box_size(), Vector3(1.5, 1.0, 1.0), 0.02):
+		return "unexpected fuse_all bounds size: %s" % str(fused.get_bounding_box_size())
+
+	var cutter := SolidBox.new()
+	cutter.build_box(Vector3.ONE, Vector3(0.5, 0.0, 0.0))
+
+	var cut: TopoShape = base.cut_all([cutter])
+	if cut == null or cut.is_null():
+		return "cut_all returned null"
+	if not _approx(cut.get_volume(), 0.5, 0.02):
+		return "unexpected cut_all volume: %s" % cut.get_volume()
+
+	var common: TopoShape = base.common_all([shifted])
+	if common == null or common.is_null():
+		return "common_all returned null"
+	if not _approx(common.get_volume(), 0.5, 0.02):
+		return "unexpected common_all volume: %s" % common.get_volume()
+	if not _approx_vec(common.get_bounding_box_size(), Vector3(0.5, 1.0, 1.0), 0.02):
+		return "unexpected common_all bounds size: %s" % str(common.get_bounding_box_size())
+
+	return ""

@@ -19,6 +19,7 @@ This repository is being extended toward build123d-style CAD functionality on to
 - Primitive solids: `SolidBox`, `SolidCone`, `SolidCylinder`, `SolidSphere`, `SolidTorus`, `SolidWedge`
 - Profile primitives: `RectangleWire`, `RectangleRoundedWire`, `CircleWire`, `EllipseWire`, `RegularPolygonWire`, `SlotOverallWire`, `PolygonWire`
 - Shape operations: translate, rotate, scale, mirror, locate, extrude, revolve, loft, sweep, and 2D offset
+- Boolean operations: pairwise fuse, cut, common, plus array-based multi-shape helpers
 - Measurements and inspection: volume, surface area, center of mass, bounds, typed topology extraction, and edge sampling
 - Import/export: STEP and STL file and byte round-trips
 - Mesh conversion: `TopoShape.to_array_mesh()`
@@ -32,11 +33,10 @@ This repository is being extended toward build123d-style CAD functionality on to
 
 ## Next Build123d Slices
 
-1. Boolean workflow refinement and any missing shape-combination helpers that map cleanly to build123d
-2. Selectors and topology queries for face, edge, vertex, and orientation-based filtering
-3. Higher-level construction helpers such as `extrude`, `revolve`, `loft`, and `sweep` polish
-4. Additional import/export behavior only when build123d needs it and the implementation is stable
-5. Convenience helpers that directly support build123d use cases, not broad OCCT coverage
+1. Selectors and topology queries for face, edge, vertex, and orientation-based filtering
+2. Higher-level construction helpers such as `extrude`, `revolve`, `loft`, and `sweep` polish
+3. Additional import/export behavior only when build123d needs it and the implementation is stable
+4. Convenience helpers that directly support build123d use cases, not broad OCCT coverage
 
 ## Deferred For Now
 

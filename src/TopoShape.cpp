@@ -88,6 +88,21 @@ Ref<TopoShape> do_boolean_operation(const TopoDS_Shape &p_left, const TopoDS_Sha
     return TopoShape::from_occt(operation.Shape());
 }
 
+template <typename TOperation>
+Ref<TopoShape> do_boolean_sequence(Ref<TopoShape> p_result, const Array &p_shapes, const char *p_context) {
+    ERR_FAIL_COND_V_MSG(p_result.is_null() || p_result->is_null(), Ref<TopoShape>(), p_context);
+
+    for (int64_t index = 0; index < p_shapes.size(); ++index) {
+        const Ref<TopoShape> other = p_shapes[index];
+        ERR_FAIL_COND_V_MSG(other.is_null() || other->is_null(), Ref<TopoShape>(), p_context);
+
+        p_result = do_boolean_operation<TOperation>(p_result->get_occt_shape(), other->get_occt_shape());
+        ERR_FAIL_COND_V_MSG(p_result.is_null(), Ref<TopoShape>(), "OpenCASCADE boolean operation returned a null shape.");
+    }
+
+    return p_result;
+}
+
 void ensure_shape_present(const TopoDS_Shape &p_shape, const char *p_context) {
     ERR_FAIL_COND_MSG(p_shape.IsNull(), p_context);
 }
@@ -200,6 +215,9 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("fuse", "other"), &TopoShape::fuse);
     ClassDB::bind_method(D_METHOD("cut", "other"), &TopoShape::cut);
     ClassDB::bind_method(D_METHOD("common", "other"), &TopoShape::common);
+    ClassDB::bind_method(D_METHOD("fuse_all", "shapes"), &TopoShape::fuse_all);
+    ClassDB::bind_method(D_METHOD("cut_all", "shapes"), &TopoShape::cut_all);
+    ClassDB::bind_method(D_METHOD("common_all", "shapes"), &TopoShape::common_all);
     ClassDB::bind_method(D_METHOD("translated", "offset"), &TopoShape::translated);
     ClassDB::bind_method(D_METHOD("rotated", "axis_origin", "axis_direction", "angle_radians"), &TopoShape::rotated);
     ClassDB::bind_method(D_METHOD("scaled", "center", "factor"), &TopoShape::scaled);
@@ -285,6 +303,42 @@ Ref<TopoShape> TopoShape::common(const Ref<TopoShape> &p_other) const {
 
     try {
         return do_boolean_operation<BRepAlgoAPI_Common>(occt_shape, p_other->occt_shape);
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<TopoShape> TopoShape::fuse_all(const Array &p_shapes) const {
+    ensure_shape_present(occt_shape, "TopoShape.fuse_all requires a non-null shape.");
+
+    try {
+        Ref<TopoShape> result = copy();
+        ERR_FAIL_COND_V_MSG(result.is_null(), Ref<TopoShape>(), "TopoShape.fuse_all could not copy the source shape.");
+        return do_boolean_sequence<BRepAlgoAPI_Fuse>(result, p_shapes, "TopoShape.fuse_all requires every shape entry to be a non-null TopoShape.");
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<TopoShape> TopoShape::cut_all(const Array &p_shapes) const {
+    ensure_shape_present(occt_shape, "TopoShape.cut_all requires a non-null shape.");
+
+    try {
+        Ref<TopoShape> result = copy();
+        ERR_FAIL_COND_V_MSG(result.is_null(), Ref<TopoShape>(), "TopoShape.cut_all could not copy the source shape.");
+        return do_boolean_sequence<BRepAlgoAPI_Cut>(result, p_shapes, "TopoShape.cut_all requires every shape entry to be a non-null TopoShape.");
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<TopoShape> TopoShape::common_all(const Array &p_shapes) const {
+    ensure_shape_present(occt_shape, "TopoShape.common_all requires a non-null shape.");
+
+    try {
+        Ref<TopoShape> result = copy();
+        ERR_FAIL_COND_V_MSG(result.is_null(), Ref<TopoShape>(), "TopoShape.common_all could not copy the source shape.");
+        return do_boolean_sequence<BRepAlgoAPI_Common>(result, p_shapes, "TopoShape.common_all requires every shape entry to be a non-null TopoShape.");
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
     }
