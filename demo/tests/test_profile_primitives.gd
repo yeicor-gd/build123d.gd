@@ -192,6 +192,44 @@ static func test_rectangle_wire_offset_2d() -> String:
 	return ""
 
 
+static func test_rectangle_rounded_wire_default_plane() -> String:
+	var rounded := RectangleRoundedWire.new()
+	rounded.build_rounded_rectangle(Vector2(6.0, 4.0), 1.0)
+
+	if not rounded.is_closed():
+		return "rounded rectangle wire was not closed"
+	if not _approx(rounded.get_length(), 12.0 + TAU, 0.03):
+		return "unexpected rounded rectangle perimeter: %s" % rounded.get_length()
+	if not _approx_vec(rounded.get_bounding_box_size(), Vector3(6.0, 4.0, 0.0), 0.02):
+		return "unexpected rounded rectangle bounds size: %s" % str(rounded.get_bounding_box_size())
+
+	var face := Face.new()
+	face.build_from_wire(rounded, true)
+	if not _approx(face.get_surface_area(), 24.0 - 4.0 + PI, 0.03):
+		return "unexpected rounded rectangle face area: %s" % face.get_surface_area()
+
+	return ""
+
+
+static func test_rectangle_rounded_wire_custom_plane() -> String:
+	var plane := CadPlane.new()
+	plane.set_plane(Vector3(10.0, 0.0, 0.0), Vector3.UP, Vector3.RIGHT)
+
+	var rounded := RectangleRoundedWire.new()
+	rounded.build_rounded_rectangle(Vector2(6.0, 4.0), 1.0, plane, false)
+
+	if not _approx_vec(rounded.get_bounding_box_min(), Vector3(10.0, 0.0, -4.0), 0.02):
+		return "unexpected custom-plane rounded rectangle bounds min: %s" % str(rounded.get_bounding_box_min())
+	if not _approx_vec(rounded.get_bounding_box_max(), Vector3(16.0, 0.0, 0.0), 0.02):
+		return "unexpected custom-plane rounded rectangle bounds max: %s" % str(rounded.get_bounding_box_max())
+
+	var polyline := rounded.get_polyline(0.05)
+	if polyline.size() < 12:
+		return "rounded rectangle polyline had too few points"
+
+	return ""
+
+
 static func test_circle_wire_offset_2d() -> String:
 	var plane := CadPlane.new()
 	plane.set_plane(Vector3(10.0, 0.0, 0.0), Vector3.UP, Vector3.RIGHT)

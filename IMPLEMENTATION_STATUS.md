@@ -111,6 +111,7 @@ Implemented in progress:
 - `CadPlane` helper backed by `gp_Pln` to avoid colliding with Godot's built-in `Plane` type
 - `Location` helper backed by `gp_Trsf`
 - `RectangleWire` profile primitive on top of `Wire` and `CadPlane`
+- `RectangleRoundedWire` profile primitive on top of `Wire` and `CadPlane`, preserving analytic circular corner arcs
 - `CircleWire` profile primitive on top of `Wire` and `CadPlane`, preserving OCCT analytic-circle geometry
 - `EllipseWire` profile primitive on top of `Wire` and `CadPlane`, preserving OCCT analytic-ellipse geometry
 - `RegularPolygonWire` profile primitive on top of `Wire` and `CadPlane`
@@ -156,6 +157,7 @@ Planned validation:
 - axis/location construction and transform tests
 - plane construction, projection, and transform tests
 - rectangular profile construction tests
+- rounded-rectangle profile construction tests
 - circular profile construction tests
 - ellipse profile construction tests
 - regular polygon profile construction tests
