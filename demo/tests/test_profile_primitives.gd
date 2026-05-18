@@ -173,3 +173,48 @@ static func test_polygon_wire_custom_plane_open() -> String:
 		return "unexpected custom-plane open polygon bounds max: %s" % str(polygon.get_bounding_box_max())
 
 	return ""
+
+
+static func test_rectangle_wire_offset_2d() -> String:
+	var rectangle := RectangleWire.new()
+	rectangle.build_rectangle(Vector2(2.0, 4.0))
+
+	var offset := rectangle.offset_2d(1.0)
+	if offset == null or offset.is_null():
+		return "rectangle offset returned null"
+	if not offset.is_closed():
+		return "rectangle offset wire was not closed"
+	if not _approx(offset.get_length(), 12.0 + TAU, 0.05):
+		return "unexpected rectangle offset perimeter: %s" % offset.get_length()
+	if not _approx_vec(offset.get_bounding_box_size(), Vector3(4.0, 6.0, 0.0), 0.03):
+		return "unexpected rectangle offset bounds size: %s" % str(offset.get_bounding_box_size())
+
+	return ""
+
+
+static func test_circle_wire_offset_2d() -> String:
+	var plane := CadPlane.new()
+	plane.set_plane(Vector3(10.0, 0.0, 0.0), Vector3.UP, Vector3.RIGHT)
+
+	var circle := CircleWire.new()
+	circle.build_circle(2.0, plane)
+
+	var grown := circle.offset_2d(1.5)
+	if grown == null or grown.is_null():
+		return "circle offset returned null"
+	if not grown.is_closed():
+		return "circle offset wire was not closed"
+	if not _approx(grown.get_length(), TAU * 3.5, 0.05):
+		return "unexpected circle offset circumference: %s" % grown.get_length()
+	if not _approx_vec(grown.get_bounding_box_min(), Vector3(6.5, 0.0, -3.5), 0.03):
+		return "unexpected circle offset bounds min: %s" % str(grown.get_bounding_box_min())
+	if not _approx_vec(grown.get_bounding_box_max(), Vector3(13.5, 0.0, 3.5), 0.03):
+		return "unexpected circle offset bounds max: %s" % str(grown.get_bounding_box_max())
+
+	var shrunk := circle.offset_2d(-0.5)
+	if shrunk == null or shrunk.is_null():
+		return "negative circle offset returned null"
+	if not _approx(shrunk.get_length(), TAU * 1.5, 0.05):
+		return "unexpected shrunk circle circumference: %s" % shrunk.get_length()
+
+	return ""

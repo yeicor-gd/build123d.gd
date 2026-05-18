@@ -31,6 +31,13 @@
 				Sweeps this closed wire along the wire [param spine] using OCCT pipe construction.
 			</description>
 		</method>
+		<method name="offset_2d" qualifiers="const">
+			<return type="Wire" />
+			<param index="0" name="distance" type="float" />
+			<description>
+				Builds a planar 2D offset of this wire by [param distance]. Positive values grow the profile outward and negative values shrink it inward.
+			</description>
+		</method>
 		<method name="extruded" qualifiers="const">
 			<return type="Solid" />
 			<param index="0" name="direction" type="Vector3" />

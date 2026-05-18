@@ -100,6 +100,7 @@ Implemented in progress:
 - `Vertex` wrapper with direct point construction and inspection
 - `Edge` wrapper with line construction, endpoint inspection, length, and polyline sampling
 - `Wire` wrapper with polygon construction, closure/length inspection, ordered edge traversal, and stitched polyline extraction
+- `Wire.offset_2d(distance)` for planar profile growth and shrink operations
 - `Face` wrapper with wire/polygon construction, planarity checks, outer-wire extraction, and representative normal access
 - `Face.build_from_wires(outer, inner_wires, only_plane)` and `Face.get_inner_wires()` for planar faces with hole boundaries
 - `Shell` wrapper with closure and face-count inspection
@@ -157,6 +158,7 @@ Planned validation:
 - ellipse profile construction tests
 - regular polygon profile construction tests
 - plane-based polygon profile construction tests
+- planar wire offset tests
 - linear extrusion tests from faces and wires
 - revolve tests from faces and wires
 - loft tests between closed profile wires

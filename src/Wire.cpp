@@ -9,15 +9,21 @@
 #include <godot_cpp/core/error_macros.hpp>
 
 #include <BRepAdaptor_Curve.hxx>
+#include <BRepBuilderAPI_MakeEdge.hxx>
 #include <BRepBuilderAPI_MakePolygon.hxx>
+#include <BRepBuilderAPI_MakeWire.hxx>
 #include <BRepGProp.hxx>
+#include <BRepOffsetAPI_MakeOffset.hxx>
 #include <BRepOffsetAPI_MakePipe.hxx>
 #include <BRepOffsetAPI_ThruSections.hxx>
 #include <BRepTools_WireExplorer.hxx>
 #include <BRep_Tool.hxx>
 #include <GCPnts_QuasiUniformDeflection.hxx>
+#include <GeomAbs_JoinType.hxx>
 #include <GProp_GProps.hxx>
+#include <TopExp_Explorer.hxx>
 #include <TopoDS.hxx>
+#include <TopoDS_Iterator.hxx>
 
 using namespace godot;
 
@@ -50,6 +56,7 @@ void Wire::_bind_methods() {
     ClassDB::bind_method(D_METHOD("build_polygon", "points", "closed"), &Wire::build_polygon, DEFVAL(true));
     ClassDB::bind_method(D_METHOD("lofted_to", "other", "make_solid", "ruled"), &Wire::lofted_to, DEFVAL(true), DEFVAL(false));
     ClassDB::bind_method(D_METHOD("swept_along", "spine"), &Wire::swept_along);
+    ClassDB::bind_method(D_METHOD("offset_2d", "distance"), &Wire::offset_2d);
     ClassDB::bind_method(D_METHOD("extruded", "direction", "only_plane"), &Wire::extruded, DEFVAL(true));
     ClassDB::bind_method(D_METHOD("revolved", "axis", "angle_radians", "only_plane"), &Wire::revolved, DEFVAL(6.28318530717958647692), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("is_closed"), &Wire::is_closed);
@@ -126,6 +133,68 @@ Ref<TopoShape> Wire::swept_along(const Ref<Wire> &p_spine) const {
         return TopoShape::from_occt(result);
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+    }
+}
+
+Ref<Wire> Wire::offset_2d(double p_distance) const {
+    ERR_FAIL_COND_V_MSG(is_null(), Ref<Wire>(), "Wire.offset_2d requires a non-null wire.");
+    ERR_FAIL_COND_V_MSG(p_distance == 0.0, Ref<Wire>(), "Wire.offset_2d requires a non-zero distance.");
+
+    try {
+        TopoDS_Wire source_wire = TopoDS::Wire(get_occt_shape());
+
+        // OCCT offsetting is unreliable for analytic single-edge wires such as circles,
+        // so rebuild them as two-edge wires first.
+        TopExp_Explorer edge_counter(source_wire, TopAbs_EDGE);
+        if (edge_counter.More()) {
+            const TopoDS_Edge source_edge = TopoDS::Edge(edge_counter.Current());
+            edge_counter.Next();
+            if (!edge_counter.More()) {
+                BRepAdaptor_Curve curve(source_edge);
+                const Standard_Real first = curve.FirstParameter();
+                const Standard_Real last = curve.LastParameter();
+                const Standard_Real mid = first + (last - first) * 0.5;
+
+                TopoDS_Edge first_half = BRepBuilderAPI_MakeEdge(curve.Curve().Curve(), first, mid).Edge();
+                TopoDS_Edge second_half = BRepBuilderAPI_MakeEdge(curve.Curve().Curve(), mid, last).Edge();
+                BRepBuilderAPI_MakeWire wire_builder;
+                wire_builder.Add(first_half);
+                wire_builder.Add(second_half);
+                wire_builder.Build();
+                ERR_FAIL_COND_V_MSG(!wire_builder.IsDone(), Ref<Wire>(), "OpenCASCADE single-edge wire preparation for offset did not complete.");
+                source_wire = wire_builder.Wire();
+            }
+        }
+
+        BRepOffsetAPI_MakeOffset builder;
+        builder.Init(GeomAbs_Arc);
+        builder.AddWire(source_wire);
+        builder.Perform(p_distance);
+
+        TopoDS_Shape result = builder.Shape();
+        ERR_FAIL_COND_V_MSG(result.IsNull(), Ref<Wire>(), "OpenCASCADE 2D offset returned a null shape.");
+
+        if (result.ShapeType() == TopAbs_COMPOUND) {
+            TopoDS_Shape first_wire;
+            int wire_count = 0;
+            for (TopoDS_Iterator iterator(result); iterator.More(); iterator.Next()) {
+                const TopoDS_Shape child = iterator.Value();
+                if (child.ShapeType() != TopAbs_WIRE) {
+                    continue;
+                }
+                if (wire_count == 0) {
+                    first_wire = child;
+                }
+                ++wire_count;
+            }
+            ERR_FAIL_COND_V_MSG(wire_count != 1 || first_wire.IsNull(), Ref<Wire>(), "Wire.offset_2d expected a single wire result.");
+            result = first_wire;
+        }
+
+        ERR_FAIL_COND_V_MSG(result.ShapeType() != TopAbs_WIRE, Ref<Wire>(), "Wire.offset_2d expected a wire result.");
+        return Wire::from_occt(TopoDS::Wire(result));
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(Ref<Wire>(), occt_utils::exception_to_string(failure));
     }
 }
 
