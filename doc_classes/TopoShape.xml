@@ -131,6 +131,12 @@
 				Returns the OCCT topological kind as an uppercase name such as [code]FACE[/code], [code]EDGE[/code], or [code]SOLID[/code].
 			</description>
 		</method>
+		<method name="get_geom_type_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the OCCT geometric subtype name for edges and faces, such as [code]LINE[/code], [code]CIRCLE[/code], or [code]PLANE[/code]. Shapes without a geometric subtype return [code]OTHER[/code].
+			</description>
+		</method>
 		<method name="get_center_of_mass" qualifiers="const">
 			<return type="Vector3" />
 			<description>

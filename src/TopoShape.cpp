@@ -25,6 +25,7 @@
 #include <BRepAlgoAPI_Cut.hxx>
 #include <BRepAlgoAPI_Fuse.hxx>
 #include <BRepAdaptor_Curve.hxx>
+#include <BRepAdaptor_Surface.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <Message.hxx>
 #include <BRepBndLib.hxx>
@@ -51,6 +52,8 @@
 #include <gp_Ax1.hxx>
 #include <gp_Dir.hxx>
 #include <gp_Trsf.hxx>
+#include <GeomAbs_CurveType.hxx>
+#include <GeomAbs_SurfaceType.hxx>
 
 #include <fstream>
 #include <ios>
@@ -228,6 +231,7 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_volume"), &TopoShape::get_volume);
     ClassDB::bind_method(D_METHOD("get_surface_area"), &TopoShape::get_surface_area);
     ClassDB::bind_method(D_METHOD("get_shape_type_name"), &TopoShape::get_shape_type_name);
+    ClassDB::bind_method(D_METHOD("get_geom_type_name"), &TopoShape::get_geom_type_name);
     ClassDB::bind_method(D_METHOD("get_center_of_mass"), &TopoShape::get_center_of_mass);
     ClassDB::bind_method(D_METHOD("get_bounding_box_min"), &TopoShape::get_bounding_box_min);
     ClassDB::bind_method(D_METHOD("get_bounding_box_max"), &TopoShape::get_bounding_box_max);
@@ -496,6 +500,53 @@ String TopoShape::get_shape_type_name() const {
         case TopAbs_SHAPE:
         default:
             return "SHAPE";
+    }
+}
+
+String TopoShape::get_geom_type_name() const {
+    ensure_shape_present(occt_shape, "TopoShape.get_geom_type_name requires a non-null shape.");
+
+    try {
+        switch (occt_shape.ShapeType()) {
+            case TopAbs_EDGE: {
+                const GeomAbs_CurveType curve_type = BRepAdaptor_Curve(TopoDS::Edge(occt_shape)).GetType();
+                switch (curve_type) {
+                    case GeomAbs_Line: return "LINE";
+                    case GeomAbs_Circle: return "CIRCLE";
+                    case GeomAbs_Ellipse: return "ELLIPSE";
+                    case GeomAbs_Hyperbola: return "HYPERBOLA";
+                    case GeomAbs_Parabola: return "PARABOLA";
+                    case GeomAbs_BezierCurve: return "BEZIER";
+                    case GeomAbs_BSplineCurve: return "BSPLINE";
+                    case GeomAbs_OffsetCurve: return "OFFSET";
+                    case GeomAbs_OtherCurve:
+                    default:
+                        return "OTHER";
+                }
+            }
+            case TopAbs_FACE: {
+                const GeomAbs_SurfaceType surface_type = BRepAdaptor_Surface(TopoDS::Face(occt_shape)).GetType();
+                switch (surface_type) {
+                    case GeomAbs_Plane: return "PLANE";
+                    case GeomAbs_Cylinder: return "CYLINDER";
+                    case GeomAbs_Cone: return "CONE";
+                    case GeomAbs_Sphere: return "SPHERE";
+                    case GeomAbs_Torus: return "TORUS";
+                    case GeomAbs_BezierSurface: return "BEZIER";
+                    case GeomAbs_BSplineSurface: return "BSPLINE";
+                    case GeomAbs_SurfaceOfRevolution: return "REVOLUTION";
+                    case GeomAbs_SurfaceOfExtrusion: return "EXTRUSION";
+                    case GeomAbs_OffsetSurface: return "OFFSET";
+                    case GeomAbs_OtherSurface:
+                    default:
+                        return "OTHER";
+                }
+            }
+            default:
+                return "OTHER";
+        }
+    } catch (const Standard_Failure &failure) {
+        ERR_FAIL_V_MSG(String(), occt_utils::exception_to_string(failure));
     }
 }
 

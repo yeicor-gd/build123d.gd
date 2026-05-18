@@ -11,6 +11,10 @@
 #include <map>
 #include <vector>
 
+#include <BRepAdaptor_Curve.hxx>
+#include <BRepAdaptor_Surface.hxx>
+#include <GeomAbs_CurveType.hxx>
+#include <GeomAbs_SurfaceType.hxx>
 #include <gp_Dir.hxx>
 
 using namespace godot;
@@ -143,6 +147,13 @@ bool shape_type_matches(const Ref<TopoShape> &p_shape, const String &p_shape_typ
 
     const String type_name = p_shape->get_shape_type_name();
     return type_name == p_shape_type_name;
+}
+
+bool geom_type_matches(const Ref<TopoShape> &p_shape, const String &p_geom_type_name) {
+    ERR_FAIL_COND_V_MSG(p_shape.is_null() || p_shape->is_null(), false, "ShapeList.filter_by_geom_type requires a non-null shape.");
+
+    const String type_name = p_shape->get_geom_type_name();
+    return type_name == p_geom_type_name;
 }
 
 double callable_metric_value(const Ref<TopoShape> &p_shape, const Callable &p_callable) {
@@ -306,6 +317,54 @@ Array group_shapes_by_shape_type(const Array &p_shapes, bool p_reverse) {
     return grouped;
 }
 
+Ref<ShapeList> sort_shapes_by_geom_type(const Array &p_shapes, bool p_reverse) {
+    std::vector<std::pair<String, Ref<TopoShape>>> ordered;
+    ordered.reserve(p_shapes.size());
+    for (int64_t index = 0; index < p_shapes.size(); ++index) {
+        const Ref<TopoShape> shape = p_shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        ordered.emplace_back(shape->get_geom_type_name(), shape);
+    }
+
+    std::sort(ordered.begin(), ordered.end(), [p_reverse](const auto &p_a, const auto &p_b) {
+        if (p_reverse) {
+            return p_a.first > p_b.first;
+        }
+        return p_a.first < p_b.first;
+    });
+
+    Array sorted;
+    for (const auto &entry : ordered) {
+        sorted.push_back(entry.second);
+    }
+    return shape_list_from_flattened(sorted);
+}
+
+Array group_shapes_by_geom_type(const Array &p_shapes, bool p_reverse) {
+    std::map<String, Array> groups;
+    for (int64_t index = 0; index < p_shapes.size(); ++index) {
+        const Ref<TopoShape> shape = p_shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        groups[shape->get_geom_type_name()].push_back(shape);
+    }
+
+    Array grouped;
+    if (p_reverse) {
+        for (auto it = groups.rbegin(); it != groups.rend(); ++it) {
+            grouped.push_back(shape_list_from_flattened(it->second));
+        }
+    } else {
+        for (const auto &entry : groups) {
+            grouped.push_back(shape_list_from_flattened(entry.second));
+        }
+    }
+    return grouped;
+}
+
 } // namespace
 
 void ShapeList::_bind_methods() {
@@ -335,18 +394,21 @@ void ShapeList::_bind_methods() {
     ClassDB::bind_method(D_METHOD("filter_by_volume", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_volume, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("filter_by_distance_to_point", "point", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_distance_to_point, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("filter_by_shape_type", "shape_type_name", "reverse"), &ShapeList::filter_by_shape_type, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("filter_by_geom_type", "geom_type_name", "reverse"), &ShapeList::filter_by_geom_type, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("filter_by", "predicate", "reverse", "tolerance"), &ShapeList::filter_by, DEFVAL(false), DEFVAL(1e-5));
     ClassDB::bind_method(D_METHOD("group_by_axis", "axis", "reverse", "tol_digits"), &ShapeList::group_by_axis, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("group_by_length", "reverse", "tol_digits"), &ShapeList::group_by_length, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("group_by_area", "reverse", "tol_digits"), &ShapeList::group_by_area, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("group_by_volume", "reverse", "tol_digits"), &ShapeList::group_by_volume, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("group_by_shape_type", "reverse"), &ShapeList::group_by_shape_type, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("group_by_geom_type", "reverse"), &ShapeList::group_by_geom_type, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("group_by", "key_fn", "reverse", "tol_digits"), &ShapeList::group_by, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("sort_by_axis", "axis", "reverse"), &ShapeList::sort_by_axis, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_length", "reverse"), &ShapeList::sort_by_length, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_area", "reverse"), &ShapeList::sort_by_area, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_volume", "reverse"), &ShapeList::sort_by_volume, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_shape_type", "reverse"), &ShapeList::sort_by_shape_type, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("sort_by_geom_type", "reverse"), &ShapeList::sort_by_geom_type, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by", "key_fn", "reverse"), &ShapeList::sort_by, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_distance", "other", "reverse"), &ShapeList::sort_by_distance, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_distance_to_point", "point", "reverse"), &ShapeList::sort_by_distance_to_point, DEFVAL(false));
@@ -677,6 +739,24 @@ Ref<ShapeList> ShapeList::filter_by_shape_type(const String &p_shape_type_name, 
     return result;
 }
 
+Ref<ShapeList> ShapeList::filter_by_geom_type(const String &p_geom_type_name, bool p_reverse) const {
+    ERR_FAIL_COND_V_MSG(p_geom_type_name.is_empty(), Ref<ShapeList>(), "ShapeList.filter_by_geom_type requires a non-empty type name.");
+
+    Ref<ShapeList> result;
+    result.instantiate();
+    for (int64_t index = 0; index < shapes.size(); ++index) {
+        const Ref<TopoShape> shape = shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        const bool matches = geom_type_matches(shape, p_geom_type_name);
+        if (matches != p_reverse) {
+            result->append(shape);
+        }
+    }
+    return result;
+}
+
 Ref<ShapeList> ShapeList::filter_by(const Callable &p_filter_by, bool p_reverse, double p_tolerance) const {
     ERR_FAIL_COND_V_MSG(!p_filter_by.is_valid(), Ref<ShapeList>(), "ShapeList.filter_by requires a valid callable.");
     (void)p_tolerance;
@@ -726,6 +806,10 @@ Array ShapeList::group_by_volume(bool p_reverse, int64_t p_tol_digits) const {
 
 Array ShapeList::group_by_shape_type(bool p_reverse) const {
     return group_shapes_by_shape_type(shapes, p_reverse);
+}
+
+Array ShapeList::group_by_geom_type(bool p_reverse) const {
+    return group_shapes_by_geom_type(shapes, p_reverse);
 }
 
 Array ShapeList::group_by(const Callable &p_group_by, bool p_reverse, int64_t p_tol_digits) const {
@@ -779,6 +863,10 @@ Ref<ShapeList> ShapeList::sort_by_volume(bool p_reverse) const {
 
 Ref<ShapeList> ShapeList::sort_by_shape_type(bool p_reverse) const {
     return sort_shapes_by_shape_type(shapes, p_reverse);
+}
+
+Ref<ShapeList> ShapeList::sort_by_geom_type(bool p_reverse) const {
+    return sort_shapes_by_geom_type(shapes, p_reverse);
 }
 
 Ref<ShapeList> ShapeList::sort_by(const Callable &p_sort_by, bool p_reverse) const {

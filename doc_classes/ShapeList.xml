@@ -197,6 +197,14 @@
 				Filters the list to shapes whose [method TopoShape.get_shape_type_name] matches [param shape_type_name].
 			</description>
 		</method>
+		<method name="filter_by_geom_type" qualifiers="const">
+			<return type="ShapeList" />
+			<param index="0" name="geom_type_name" type="String" />
+			<param index="1" name="reverse" type="bool" default="false" />
+			<description>
+				Filters the list to edges and faces whose [method TopoShape.get_geom_type_name] matches [param geom_type_name].
+			</description>
+		</method>
 		<method name="filter_by" qualifiers="const">
 			<return type="ShapeList" />
 			<param index="0" name="predicate" type="Callable" />
@@ -246,6 +254,13 @@
 				Groups shapes by OCCT shape type name.
 			</description>
 		</method>
+		<method name="group_by_geom_type" qualifiers="const">
+			<return type="Array" />
+			<param index="0" name="reverse" type="bool" default="false" />
+			<description>
+				Groups edges and faces by OCCT geometric subtype name.
+			</description>
+		</method>
 		<method name="group_by" qualifiers="const">
 			<return type="Array" />
 			<param index="0" name="key_fn" type="Callable" />
@@ -289,6 +304,13 @@
 			<param index="0" name="reverse" type="bool" default="false" />
 			<description>
 				Sorts shapes by OCCT shape type name.
+			</description>
+		</method>
+		<method name="sort_by_geom_type" qualifiers="const">
+			<return type="ShapeList" />
+			<param index="0" name="reverse" type="bool" default="false" />
+			<description>
+				Sorts edges and faces by OCCT geometric subtype name.
 			</description>
 		</method>
 		<method name="sort_by" qualifiers="const">

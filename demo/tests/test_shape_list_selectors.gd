@@ -109,6 +109,27 @@ static func test_shape_list_position_and_distance() -> String:
 	if filtered_plane.size() != 2:
 		return "expected 2 plane-filtered shapes but got %s" % filtered_plane.size()
 
+	var geom_type_filtered := plane_shapes.filter_by_geom_type("LINE")
+	if geom_type_filtered.size() != 2:
+		return "expected two line geom-type shapes but got %s" % geom_type_filtered.size()
+	var plane_geom_filtered := plane_shapes.filter_by_geom_type("PLANE")
+	if plane_geom_filtered.size() != 1:
+		return "expected one plane geom-type shape but got %s" % plane_geom_filtered.size()
+	var geom_type_sorted := plane_shapes.sort_by_geom_type()
+	if geom_type_sorted.size() != 3:
+		return "unexpected geom-type sorted size: %s" % geom_type_sorted.size()
+	if geom_type_sorted.get_item(0).get_geom_type_name() != "LINE":
+		return "sort_by_geom_type did not place line shapes first"
+	if geom_type_sorted.get_item(2).get_geom_type_name() != "PLANE":
+		return "sort_by_geom_type did not place the plane last"
+	var geom_type_grouped := plane_shapes.group_by_geom_type()
+	if geom_type_grouped.size() != 2:
+		return "expected two geom-type groups but got %s" % geom_type_grouped.size()
+	if geom_type_grouped[0].get_item(0).get_geom_type_name() != "LINE":
+		return "group_by_geom_type did not order groups by geom type name"
+	if geom_type_grouped[1].get_item(0).get_geom_type_name() != "PLANE":
+		return "group_by_geom_type returned an unexpected last group"
+
 	var short_edge := Edge.new()
 	short_edge.build_line(Vector3.ZERO, Vector3.RIGHT)
 	var long_edge := Edge.new()
