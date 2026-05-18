@@ -131,6 +131,42 @@ static func test_shape_list_position_and_distance() -> String:
 	if not _approx(volume_filtered.get_item(0).get_volume(), 1.0, 0.001):
 		return "filter_by_volume returned the wrong box"
 
+	var axis_group_shapes := ShapeList.new()
+	var axis_group_a := SolidBox.new()
+	axis_group_a.build_box(Vector3.ONE, Vector3.ZERO)
+	var axis_group_b := SolidBox.new()
+	axis_group_b.build_box(Vector3.ONE, Vector3(0.0, 2.0, 0.0))
+	var axis_group_c := SolidBox.new()
+	axis_group_c.build_box(Vector3.ONE, Vector3(2.0, 0.0, 0.0))
+	axis_group_shapes.append(axis_group_a)
+	axis_group_shapes.append(axis_group_b)
+	axis_group_shapes.append(axis_group_c)
+	var x_axis := Axis.new()
+	x_axis.set_axis(Vector3.ZERO, Vector3.RIGHT)
+	var grouped_axis := axis_group_shapes.group_by_axis(x_axis)
+	if grouped_axis.size() != 2:
+		return "expected two X-axis groups but got %s" % grouped_axis.size()
+	if grouped_axis[0].size() != 2 or grouped_axis[1].size() != 1:
+		return "unexpected X-axis grouping sizes: %s / %s" % [grouped_axis[0].size(), grouped_axis[1].size()]
+
+	var grouped_length := length_shapes.group_by_length()
+	if grouped_length.size() != 2:
+		return "expected two length groups but got %s" % grouped_length.size()
+	if grouped_length[0].size() != 1 or grouped_length[1].size() != 1:
+		return "unexpected length grouping sizes: %s / %s" % [grouped_length[0].size(), grouped_length[1].size()]
+
+	var grouped_area := volume_shapes.group_by_area()
+	if grouped_area.size() != 2:
+		return "expected two area groups but got %s" % grouped_area.size()
+	if grouped_area[0].size() != 1 or grouped_area[1].size() != 1:
+		return "unexpected area grouping sizes: %s / %s" % [grouped_area[0].size(), grouped_area[1].size()]
+
+	var grouped_volume := volume_shapes.group_by_volume()
+	if grouped_volume.size() != 2:
+		return "expected two volume groups but got %s" % grouped_volume.size()
+	if grouped_volume[0].size() != 1 or grouped_volume[1].size() != 1:
+		return "unexpected volume grouping sizes: %s / %s" % [grouped_volume[0].size(), grouped_volume[1].size()]
+
 	var expanded := shapes.solids()
 	if expanded.size() != 3:
 		return "expected solids() to preserve all solids but got %s" % expanded.size()

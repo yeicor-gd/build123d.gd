@@ -47,6 +47,10 @@ public:
     godot::Ref<ShapeList> filter_by_length(double p_minimum, double p_maximum, bool p_min_inclusive = true, bool p_max_inclusive = true) const;
     godot::Ref<ShapeList> filter_by_area(double p_minimum, double p_maximum, bool p_min_inclusive = true, bool p_max_inclusive = true) const;
     godot::Ref<ShapeList> filter_by_volume(double p_minimum, double p_maximum, bool p_min_inclusive = true, bool p_max_inclusive = true) const;
+    godot::Array group_by_axis(const godot::Ref<Axis> &p_axis, bool p_reverse = false, int64_t p_tol_digits = 6) const;
+    godot::Array group_by_length(bool p_reverse = false, int64_t p_tol_digits = 6) const;
+    godot::Array group_by_area(bool p_reverse = false, int64_t p_tol_digits = 6) const;
+    godot::Array group_by_volume(bool p_reverse = false, int64_t p_tol_digits = 6) const;
     godot::Ref<ShapeList> sort_by_axis(const godot::Ref<Axis> &p_axis, bool p_reverse = false) const;
     godot::Ref<ShapeList> sort_by_length(bool p_reverse = false) const;
     godot::Ref<ShapeList> sort_by_area(bool p_reverse = false) const;

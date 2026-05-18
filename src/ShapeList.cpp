@@ -7,6 +7,8 @@
 #include <godot_cpp/core/error_macros.hpp>
 
 #include <algorithm>
+#include <cmath>
+#include <map>
 #include <vector>
 
 #include <gp_Dir.hxx>
@@ -127,6 +129,52 @@ Ref<ShapeList> filter_shapes_by_metric(const Array &p_shapes, const StringName &
     return result;
 }
 
+double round_to_digits(double p_value, int64_t p_tol_digits) {
+    const double factor = std::pow(10.0, static_cast<double>(std::max<int64_t>(0, p_tol_digits)));
+    return std::round(p_value * factor) / factor;
+}
+
+Array grouped_shape_arrays_from_map(const std::map<double, Array> &p_groups, bool p_reverse) {
+    Array grouped;
+    if (p_reverse) {
+        for (auto it = p_groups.rbegin(); it != p_groups.rend(); ++it) {
+            grouped.push_back(shape_list_from_flattened(it->second));
+        }
+    } else {
+        for (const auto &entry : p_groups) {
+            grouped.push_back(shape_list_from_flattened(entry.second));
+        }
+    }
+    return grouped;
+}
+
+template <typename TKeyFn>
+Array group_shapes_by_key(const Array &p_shapes, TKeyFn &&p_key_fn, int64_t p_tol_digits, bool p_reverse) {
+    std::map<double, Array> groups;
+    for (int64_t index = 0; index < p_shapes.size(); ++index) {
+        const Ref<TopoShape> shape = p_shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        const double key = round_to_digits(p_key_fn(shape), p_tol_digits);
+        groups[key].push_back(shape);
+    }
+    return grouped_shape_arrays_from_map(groups, p_reverse);
+}
+
+Array group_shapes_by_metric(const Array &p_shapes, const StringName &p_method_name, int64_t p_tol_digits, bool p_reverse) {
+    std::map<double, Array> groups;
+    for (int64_t index = 0; index < p_shapes.size(); ++index) {
+        const Ref<TopoShape> shape = p_shapes[index];
+        if (shape.is_null() || shape->is_null() || !shape->has_method(p_method_name)) {
+            continue;
+        }
+        const double key = round_to_digits(shape_metric_value(shape, p_method_name), p_tol_digits);
+        groups[key].push_back(shape);
+    }
+    return grouped_shape_arrays_from_map(groups, p_reverse);
+}
+
 } // namespace
 
 void ShapeList::_bind_methods() {
@@ -154,6 +202,10 @@ void ShapeList::_bind_methods() {
     ClassDB::bind_method(D_METHOD("filter_by_length", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_length, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("filter_by_area", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_area, DEFVAL(true), DEFVAL(true));
     ClassDB::bind_method(D_METHOD("filter_by_volume", "minimum", "maximum", "min_inclusive", "max_inclusive"), &ShapeList::filter_by_volume, DEFVAL(true), DEFVAL(true));
+    ClassDB::bind_method(D_METHOD("group_by_axis", "axis", "reverse", "tol_digits"), &ShapeList::group_by_axis, DEFVAL(false), DEFVAL(6));
+    ClassDB::bind_method(D_METHOD("group_by_length", "reverse", "tol_digits"), &ShapeList::group_by_length, DEFVAL(false), DEFVAL(6));
+    ClassDB::bind_method(D_METHOD("group_by_area", "reverse", "tol_digits"), &ShapeList::group_by_area, DEFVAL(false), DEFVAL(6));
+    ClassDB::bind_method(D_METHOD("group_by_volume", "reverse", "tol_digits"), &ShapeList::group_by_volume, DEFVAL(false), DEFVAL(6));
     ClassDB::bind_method(D_METHOD("sort_by_axis", "axis", "reverse"), &ShapeList::sort_by_axis, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_length", "reverse"), &ShapeList::sort_by_length, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_area", "reverse"), &ShapeList::sort_by_area, DEFVAL(false));
@@ -446,6 +498,34 @@ Ref<ShapeList> ShapeList::filter_by_area(double p_minimum, double p_maximum, boo
 
 Ref<ShapeList> ShapeList::filter_by_volume(double p_minimum, double p_maximum, bool p_min_inclusive, bool p_max_inclusive) const {
     return filter_shapes_by_metric(shapes, StringName("get_volume"), p_minimum, p_maximum, p_min_inclusive, p_max_inclusive);
+}
+
+Array ShapeList::group_by_axis(const Ref<Axis> &p_axis, bool p_reverse, int64_t p_tol_digits) const {
+    ERR_FAIL_COND_V_MSG(p_axis.is_null(), Array(), "ShapeList.group_by_axis requires a non-null axis.");
+
+    const gp_Dir direction = p_axis->get_occt_axis().Direction();
+    const Vector3 origin = p_axis->get_origin();
+    return group_shapes_by_key(
+            shapes,
+            [&direction, &origin](const Ref<TopoShape> &p_shape) {
+                const Vector3 center = shape_center(p_shape);
+                const Vector3 relative = center - origin;
+                return static_cast<double>(relative.x) * direction.X() + static_cast<double>(relative.y) * direction.Y() + static_cast<double>(relative.z) * direction.Z();
+            },
+            p_tol_digits,
+            p_reverse);
+}
+
+Array ShapeList::group_by_length(bool p_reverse, int64_t p_tol_digits) const {
+    return group_shapes_by_metric(shapes, StringName("get_length"), p_tol_digits, p_reverse);
+}
+
+Array ShapeList::group_by_area(bool p_reverse, int64_t p_tol_digits) const {
+    return group_shapes_by_metric(shapes, StringName("get_surface_area"), p_tol_digits, p_reverse);
+}
+
+Array ShapeList::group_by_volume(bool p_reverse, int64_t p_tol_digits) const {
+    return group_shapes_by_metric(shapes, StringName("get_volume"), p_tol_digits, p_reverse);
 }
 
 Ref<ShapeList> ShapeList::sort_by_axis(const Ref<Axis> &p_axis, bool p_reverse) const {
