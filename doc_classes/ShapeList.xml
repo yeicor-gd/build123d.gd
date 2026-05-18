@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ShapeList" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+	<brief_description>
+		List-like container for topology wrappers and selector helpers.
+	</brief_description>
+	<description>
+		[ShapeList] stores topology wrappers and provides the first build123d-style selector operations implemented in this extension. It is intended for working with the results returned by [TopoShape] extraction methods.
+	</description>
+	<methods>
+		<method name="append">
+			<return type="void" />
+			<param index="0" name="shape" type="TopoShape" />
+			<description>
+				Appends a non-null [TopoShape] to the list.
+			</description>
+		</method>
+		<method name="size" qualifiers="const">
+			<return type="int" />
+			<description>
+				Returns the number of shapes in the list.
+			</description>
+		</method>
+		<method name="is_empty" qualifiers="const">
+			<return type="bool" />
+			<description>
+				Returns [code]true[/code] when the list contains no shapes.
+			</description>
+		</method>
+		<method name="get_item" qualifiers="const">
+			<return type="TopoShape" />
+			<param index="0" name="index" type="int" />
+			<description>
+				Returns the shape at [param index].
+			</description>
+		</method>
+		<method name="to_array" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Returns the list contents as a plain [Array].
+			</description>
+		</method>
+		<method name="vertices" qualifiers="const">
+			<return type="ShapeList" />
+			<description>
+				Returns all vertices contained by every shape in the list.
+			</description>
+		</method>
+		<method name="edges" qualifiers="const">
+			<return type="ShapeList" />
+			<description>
+				Returns all edges contained by every shape in the list.
+			</description>
+		</method>
+		<method name="wires" qualifiers="const">
+			<return type="ShapeList" />
+			<description>
+				Returns all wires contained by every shape in the list.
+			</description>
+		</method>
+		<method name="faces" qualifiers="const">
+			<return type="ShapeList" />
+			<description>
+				Returns all faces contained by every shape in the list.
+			</description>
+		</method>
+		<method name="shells" qualifiers="const">
+			<return type="ShapeList" />
+			<description>
+				Returns all shells contained by every shape in the list.
+			</description>
+		</method>
+		<method name="compounds" qualifiers="const">
+			<return type="ShapeList" />
+			<description>
+				Returns all compounds contained by every shape in the list.
+			</description>
+		</method>
+		<method name="solids" qualifiers="const">
+			<return type="ShapeList" />
+			<description>
+				Returns all solids contained by every shape in the list.
+			</description>
+		</method>
+		<method name="filter_by_position" qualifiers="const">
+			<return type="ShapeList" />
+			<param index="0" name="axis" type="Axis" />
+			<param index="1" name="minimum" type="float" />
+			<param index="2" name="maximum" type="float" />
+			<param index="3" name="min_inclusive" type="bool" default="true" />
+			<param index="4" name="max_inclusive" type="bool" default="true" />
+			<description>
+				Filters shapes by their center position along [param axis] and returns the matching shapes sorted by that position.
+			</description>
+		</method>
+		<method name="sort_by_distance" qualifiers="const">
+			<return type="ShapeList" />
+			<param index="0" name="other" type="TopoShape" />
+			<param index="1" name="reverse" type="bool" default="false" />
+			<description>
+				Sorts the list by distance to [param other].
+			</description>
+		</method>
+	</methods>
+</class>

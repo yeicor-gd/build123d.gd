@@ -23,6 +23,7 @@
 #include "RectangleRoundedWire.h"
 #include "RectangleWire.h"
 #include "RegularPolygonWire.h"
+#include "ShapeList.h"
 #include "Shell.h"
 #include "SlotOverallWire.h"
 #include "Solid.h"
@@ -46,6 +47,7 @@ void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
     GDREGISTER_CLASS(GeometryVector);
     GDREGISTER_CLASS(Location);
     GDREGISTER_CLASS(OpenCascadeVersion);
+    GDREGISTER_CLASS(ShapeList);
     GDREGISTER_CLASS(TopoShape);
     GDREGISTER_CLASS(Vertex);
     GDREGISTER_CLASS(Wire);

@@ -20,7 +20,7 @@ This repository is being extended toward build123d-style CAD functionality on to
 - Profile primitives: `RectangleWire`, `RectangleRoundedWire`, `CircleWire`, `EllipseWire`, `RegularPolygonWire`, `SlotOverallWire`, `PolygonWire`
 - Shape operations: translate, rotate, scale, mirror, locate, extrude, revolve, loft, sweep, and 2D offset
 - Boolean operations: pairwise fuse, cut, common, plus array-based multi-shape helpers
-- Measurements and inspection: volume, surface area, center of mass, bounds, typed topology extraction, and edge sampling
+- Measurements and inspection: volume, surface area, center of mass, bounds, typed topology extraction, edge sampling, and the first ShapeList selector helpers
 - Import/export: STEP and STL file and byte round-trips
 - Mesh conversion: `TopoShape.to_array_mesh()`
 - Registration regeneration: `src/register_types.sh`
@@ -28,15 +28,16 @@ This repository is being extended toward build123d-style CAD functionality on to
 ## Current Focus
 
 1. Keep documentation valid on all platforms before adding new features.
-2. Fill the remaining build123d modeling gaps in small slices.
+2. Expand ShapeList selectors and topology filtering in small slices.
 3. Add tests alongside each new public API.
 
 ## Next Build123d Slices
 
-1. Selectors and topology queries for face, edge, vertex, and orientation-based filtering
-2. Higher-level construction helpers such as `extrude`, `revolve`, `loft`, and `sweep` polish
-3. Additional import/export behavior only when build123d needs it and the implementation is stable
-4. Convenience helpers that directly support build123d use cases, not broad OCCT coverage
+1. Expand `ShapeList` with `filter_by`, `group_by`, and `sort_by` behavior that matches build123d
+2. Add selectors and topology queries for face, edge, vertex, and orientation-based filtering where they are still missing
+3. Higher-level construction helpers such as `extrude`, `revolve`, `loft`, and `sweep` polish
+4. Additional import/export behavior only when build123d needs it and the implementation is stable
+5. Convenience helpers that directly support build123d use cases, not broad OCCT coverage
 
 ## Deferred For Now
 
