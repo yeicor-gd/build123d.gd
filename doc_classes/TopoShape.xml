@@ -125,6 +125,12 @@
 				Returns the OCCT surface area of the shape.
 			</description>
 		</method>
+		<method name="get_shape_type_name" qualifiers="const">
+			<return type="String" />
+			<description>
+				Returns the OCCT topological kind as an uppercase name such as [code]FACE[/code], [code]EDGE[/code], or [code]SOLID[/code].
+			</description>
+		</method>
 		<method name="get_center_of_mass" qualifiers="const">
 			<return type="Vector3" />
 			<description>

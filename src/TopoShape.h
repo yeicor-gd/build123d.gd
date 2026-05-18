@@ -54,6 +54,7 @@ public:
 
     double get_volume() const;
     double get_surface_area() const;
+    godot::String get_shape_type_name() const;
     godot::Vector3 get_center_of_mass() const;
     godot::Vector3 get_bounding_box_min() const;
     godot::Vector3 get_bounding_box_max() const;

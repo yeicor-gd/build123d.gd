@@ -143,6 +143,16 @@ static func test_shape_list_position_and_distance() -> String:
 	if not _approx(volume_filtered.get_item(0).get_volume(), 1.0, 0.001):
 		return "filter_by_volume returned the wrong box"
 
+	var shape_type_filtered := shapes.filter_by_shape_type("SOLID")
+	if shape_type_filtered.size() != 3:
+		return "expected three solid shapes but got %s" % shape_type_filtered.size()
+	if shape_type_filtered.get_item(0).get_shape_type_name() != "SOLID":
+		return "filter_by_shape_type did not preserve solid shape kinds"
+
+	var edge_type_filtered := plane_shapes.filter_by_shape_type("EDGE")
+	if edge_type_filtered.size() != 2:
+		return "expected two edges but got %s" % edge_type_filtered.size()
+
 	var axis_group_shapes := ShapeList.new()
 	var axis_group_a := SolidBox.new()
 	axis_group_a.build_box(Vector3.ONE, Vector3.ZERO)

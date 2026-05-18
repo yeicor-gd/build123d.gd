@@ -227,6 +227,7 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("located", "location"), &TopoShape::located);
     ClassDB::bind_method(D_METHOD("get_volume"), &TopoShape::get_volume);
     ClassDB::bind_method(D_METHOD("get_surface_area"), &TopoShape::get_surface_area);
+    ClassDB::bind_method(D_METHOD("get_shape_type_name"), &TopoShape::get_shape_type_name);
     ClassDB::bind_method(D_METHOD("get_center_of_mass"), &TopoShape::get_center_of_mass);
     ClassDB::bind_method(D_METHOD("get_bounding_box_min"), &TopoShape::get_bounding_box_min);
     ClassDB::bind_method(D_METHOD("get_bounding_box_max"), &TopoShape::get_bounding_box_max);
@@ -469,6 +470,32 @@ double TopoShape::get_surface_area() const {
         return properties.Mass();
     } catch (const Standard_Failure &failure) {
         ERR_FAIL_V_MSG(0.0, occt_utils::exception_to_string(failure));
+    }
+}
+
+String TopoShape::get_shape_type_name() const {
+    ensure_shape_present(occt_shape, "TopoShape.get_shape_type_name requires a non-null shape.");
+
+    switch (occt_shape.ShapeType()) {
+        case TopAbs_COMPOUND:
+            return "COMPOUND";
+        case TopAbs_COMPSOLID:
+            return "COMPSOLID";
+        case TopAbs_SOLID:
+            return "SOLID";
+        case TopAbs_SHELL:
+            return "SHELL";
+        case TopAbs_FACE:
+            return "FACE";
+        case TopAbs_WIRE:
+            return "WIRE";
+        case TopAbs_EDGE:
+            return "EDGE";
+        case TopAbs_VERTEX:
+            return "VERTEX";
+        case TopAbs_SHAPE:
+        default:
+            return "SHAPE";
     }
 }
 
