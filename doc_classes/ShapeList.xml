@@ -282,5 +282,13 @@
 				Sorts the list by distance to [param other].
 			</description>
 		</method>
+		<method name="sort_by_distance_to_point" qualifiers="const">
+			<return type="ShapeList" />
+			<param index="0" name="point" type="Vector3" />
+			<param index="1" name="reverse" type="bool" default="false" />
+			<description>
+				Sorts the list by distance to [param point].
+			</description>
+		</method>
 	</methods>
 </class>

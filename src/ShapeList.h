@@ -61,6 +61,7 @@ public:
     godot::Ref<ShapeList> sort_by_volume(bool p_reverse = false) const;
     godot::Ref<ShapeList> sort_by(const godot::Callable &p_sort_by, bool p_reverse = false) const;
     godot::Ref<ShapeList> sort_by_distance(const godot::Ref<TopoShape> &p_other, bool p_reverse = false) const;
+    godot::Ref<ShapeList> sort_by_distance_to_point(const godot::Vector3 &p_point, bool p_reverse = false) const;
 };
 
 #endif // SHAPE_LIST_H

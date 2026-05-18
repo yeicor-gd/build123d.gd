@@ -64,6 +64,12 @@ static func test_shape_list_position_and_distance() -> String:
 	if not _approx(sorted.get_item(2).get_center_of_mass().x, 6.5, 0.02):
 		return "distance sort did not place farthest shape last"
 
+	var sorted_point := shapes.sort_by_distance_to_point(Vector3.ZERO)
+	if sorted_point.size() != 3:
+		return "unexpected point-sorted list size: %s" % sorted_point.size()
+	if not _approx(sorted_point.get_item(0).get_center_of_mass().x, 0.5, 0.02):
+		return "point distance sort did not place the nearest shape first"
+
 	if not _approx_vec(shapes.center(), Vector3(3.1666667, 0.5, 0.5), 0.02):
 		return "unexpected shape list center: %s" % str(shapes.center())
 	if not _approx_vec(shapes.get_bounding_box_min(), Vector3.ZERO, 0.001):

@@ -282,6 +282,7 @@ void ShapeList::_bind_methods() {
     ClassDB::bind_method(D_METHOD("sort_by_volume", "reverse"), &ShapeList::sort_by_volume, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by", "key_fn", "reverse"), &ShapeList::sort_by, DEFVAL(false));
     ClassDB::bind_method(D_METHOD("sort_by_distance", "other", "reverse"), &ShapeList::sort_by_distance, DEFVAL(false));
+    ClassDB::bind_method(D_METHOD("sort_by_distance_to_point", "point", "reverse"), &ShapeList::sort_by_distance_to_point, DEFVAL(false));
 }
 
 ShapeList::ShapeList() = default;
@@ -701,6 +702,31 @@ Ref<ShapeList> ShapeList::sort_by_distance(const Ref<TopoShape> &p_other, bool p
             continue;
         }
         ordered.emplace_back(shape_center(shape).distance_to(other_center), shape);
+    }
+
+    std::sort(ordered.begin(), ordered.end(), [p_reverse](const auto &p_a, const auto &p_b) {
+        if (p_reverse) {
+            return p_a.first > p_b.first;
+        }
+        return p_a.first < p_b.first;
+    });
+
+    Array sorted;
+    for (const auto &entry : ordered) {
+        sorted.push_back(entry.second);
+    }
+    return shape_list_from_flattened(sorted);
+}
+
+Ref<ShapeList> ShapeList::sort_by_distance_to_point(const Vector3 &p_point, bool p_reverse) const {
+    std::vector<std::pair<double, Ref<TopoShape>>> ordered;
+    ordered.reserve(shapes.size());
+    for (int64_t index = 0; index < shapes.size(); ++index) {
+        const Ref<TopoShape> shape = shapes[index];
+        if (shape.is_null() || shape->is_null()) {
+            continue;
+        }
+        ordered.emplace_back(shape_center(shape).distance_to(p_point), shape);
     }
 
     std::sort(ordered.begin(), ordered.end(), [p_reverse](const auto &p_a, const auto &p_b) {
