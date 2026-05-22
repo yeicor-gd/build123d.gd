@@ -340,10 +340,8 @@ jobs:
           echo "CCACHE_SLOPPINESS=include_file_mtime,include_file_ctime" >> $GITHUB_ENV
           echo "CCACHE_FILESTATMATCHES=false" >> $GITHUB_ENV
           # ---
-          echo "/usr/lib/ccache" >> $GITHUB_PATH
-          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=$(command -v ccache)" >> $GITHUB_ENV
+          echo "CMAKE_C_COMPILER_LAUNCHER=$(command -v ccache)" >> $GITHUB_ENV
           echo "VCPKG_KEEP_ENV_VARS=CCACHE_DIR;CCACHE_COMPILERCHECK;CCACHE_SLOPPINESS;CCACHE_FILESTATMATCHES;CMAKE_CXX_COMPILER_LAUNCHER;CMAKE_C_COMPILER_LAUNCHER" >> $GITHUB_ENV
 
       - name: Build with vcpkg
