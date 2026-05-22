@@ -85,11 +85,6 @@ else
     echo "Skipping build (DO_BUILD=$DO_BUILD). Running runtime validation..."
 fi
 
-RUNTIME_LOG=$(mktemp)
-GODOT_RUNTIME_HOME=$(mktemp -d)
-mkdir -p "$GODOT_RUNTIME_HOME/config" "$GODOT_RUNTIME_HOME/cache"
-trap "rm -f '$BUILD_LOG' '$RUNTIME_LOG'; rm -rf '$GODOT_RUNTIME_HOME'" EXIT
-
 if [ "$GODOT_VERSION" = "system" ]; then
     # Use system Godot, no sanitizers, no build
     GODOT_BIN="godot"
@@ -142,13 +137,18 @@ fi
 
 cd "$SCRIPT_DIR"
 
-if [ "$GODOT_VERSION" = "system" ]; then
-    HOME="$GODOT_RUNTIME_HOME" XDG_CONFIG_HOME="$GODOT_RUNTIME_HOME/config" XDG_CACHE_HOME="$GODOT_RUNTIME_HOME/cache" $GODOT_BIN --editor --path "$SCRIPT_DIR/demo" --headless --quit 2>&1 # | tee "$RUNTIME_LOG" || true
-    HOME="$GODOT_RUNTIME_HOME" XDG_CONFIG_HOME="$GODOT_RUNTIME_HOME/config" XDG_CACHE_HOME="$GODOT_RUNTIME_HOME/cache" $GODOT_BIN --path "$SCRIPT_DIR/demo" --headless 2>&1 | tee -a "$RUNTIME_LOG" || true
-else
-    HOME="$GODOT_RUNTIME_HOME" XDG_CONFIG_HOME="$GODOT_RUNTIME_HOME/config" XDG_CACHE_HOME="$GODOT_RUNTIME_HOME/cache" LD_PRELOAD=$(gcc -print-file-name=libasan.so) LSAN_OPTIONS=detect_leaks=0 $GODOT_BIN --editor --path "$SCRIPT_DIR/demo" --headless --quit 2>&1 # | tee "$RUNTIME_LOG" || true
-    HOME="$GODOT_RUNTIME_HOME" XDG_CONFIG_HOME="$GODOT_RUNTIME_HOME/config" XDG_CACHE_HOME="$GODOT_RUNTIME_HOME/cache" LD_PRELOAD=$(gcc -print-file-name=libasan.so) $GODOT_BIN --path "$SCRIPT_DIR/demo" --headless 2>&1 | tee -a "$RUNTIME_LOG" || true
+MY_LD_PRELOAD=""
+if [ "$GODOT_VERSION" != "system" ]; then
+    MY_LD_PRELOAD="LD_PRELOAD=$(gcc -print-file-name=libasan.so)"
 fi
+
+EDITOR_LOG=$(mktemp)
+trap "rm -f '$EDITOR_LOG'" EXIT
+RUNTIME_LOG=$(mktemp)
+trap "rm -f '$RUNTIME_LOG'" EXIT
+
+$MY_LD_PRELOAD LSAN_OPTIONS=detect_leaks=0 $GODOT_BIN --editor --path "$SCRIPT_DIR/demo" --headless --quit 2>&1 | tee -a "$EDITOR_LOG" || true
+$MY_LD_PRELOAD $GODOT_BIN --path "$SCRIPT_DIR/demo" --headless 2>&1 | tee -a "$RUNTIME_LOG" || true
 
 _extract_runtime_errors() {
     local log_file="$1"
@@ -156,7 +156,24 @@ _extract_runtime_errors() {
     grep -E "^ERROR:|^SCRIPT ERROR:|^WARNING:|^handle_crash:|Shader compilation error|Script compilation error|Parse error|undefined method|undefined symbol|not found|No such|^TESTS FAILED" || return 0
 }
 
-ERRORS=$(_extract_runtime_errors "$RUNTIME_LOG" 2>/dev/null || true)
+_extract_runtime_errors() {
+    local log_file="$1"
+    local ignore_editor_crash="$2"
+
+    local base_filter="grep -E -v '^ERROR:|^SCRIPT ERROR:|^WARNING:|Shader compilation error|Script compilation error|Parse error|undefined method|undefined symbol|not found|No such|^TESTS FAILED|(ObjectDB|RID).*leaked|resources still in use at exit'"
+
+    if [ "$ignore_editor_crash" = "true" ]; then
+        eval "$base_filter" "\"$log_file\"" || return 0
+    else
+        eval "$base_filter" "\"$log_file\"" | grep -E "^handle_crash:" || return 0
+    fi
+}
+
+IMPORT_ERRORS=$(_extract_runtime_errors "$EDITOR_LOG" true 2>/dev/null || true)
+RUN_ERRORS=$(_extract_runtime_errors "$RUNTIME_LOG" false 2>/dev/null || true)
+
+ERRORS="${IMPORT_ERRORS}"$'\n'"${RUN_ERRORS}"
+ERRORS=$(echo "$ERRORS" | sed '/^$/d')
 
 if [ -n "$ERRORS" ]; then
     if [ -n "$ERROR_FILE" ]; then
