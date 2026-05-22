@@ -339,6 +339,8 @@ jobs:
           echo "CCACHE_SLOPPINESS=include_file_mtime,include_file_ctime" >> $GITHUB_ENV
           echo "CCACHE_FILESTATMATCHES=false" >> $GITHUB_ENV
           # ---
+          echo "/usr/lib/ccache" >> $GITHUB_PATH
+          echo "/usr/local/opt/ccache/libexec" >> $GITHUB_PATH
           if [ "${{ matrix.target.os }}" = "windows-2025" ]; then
             echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache.exe" >> $GITHUB_ENV
             echo "CMAKE_C_COMPILER_LAUNCHER=ccache.exe" >> $GITHUB_ENV
