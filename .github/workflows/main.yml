@@ -339,8 +339,13 @@ jobs:
           echo "CCACHE_SLOPPINESS=include_file_mtime,include_file_ctime" >> $GITHUB_ENV
           echo "CCACHE_FILESTATMATCHES=false" >> $GITHUB_ENV
           # ---
-          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
-          echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          if [ "${{ matrix.target.os }}" = "windows-2025" ]; then
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache.exe" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER_LAUNCHER=ccache.exe" >> $GITHUB_ENV
+          else
+            echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+            echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          fi
           echo "VCPKG_KEEP_ENV_VARS=CCACHE_DIR;CCACHE_COMPILERCHECK;CCACHE_SLOPPINESS;CCACHE_FILESTATMATCHES;CMAKE_CXX_COMPILER_LAUNCHER;CMAKE_C_COMPILER_LAUNCHER" >> $GITHUB_ENV
 
       - name: Build with vcpkg
