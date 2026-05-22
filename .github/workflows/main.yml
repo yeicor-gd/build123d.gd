@@ -132,11 +132,7 @@ jobs:
             { vcpkg_triplet: arm64-windows-static, os: windows-2025 }, # MSVC instead of mingw
             { vcpkg_triplet: arm64-osx, os: macos-15 },
             { vcpkg_triplet: x64-osx, os: macos-15 },
-            {
-              vcpkg_triplet: wasm32-emscripten,
-              os: ubuntu-24.04,
-              threads: off,
-            },
+            { vcpkg_triplet: wasm32-emscripten, os: ubuntu-24.04, threads: off },
             { vcpkg_triplet: wasm32-emscripten, os: ubuntu-24.04, threads: on },
             { vcpkg_triplet: x64-android, os: ubuntu-24.04 },
             { vcpkg_triplet: x86-android, os: ubuntu-24.04 },
@@ -171,6 +167,88 @@ jobs:
         with:
           name: godot-api-${{ matrix.float-precision }}
           path: godot-cpp/gdextension/
+
+      - name: Build cache artifact prefix
+        id: cache-prefix
+        shell: bash
+        run: |
+          # Build the artifact prefix for cache lookups
+          CACHE_PREFIX="build-cache-${{ matrix.target.vcpkg_triplet }}-${{ matrix.target-type }}-${{ matrix.float-precision }}"
+          if [ "${{ matrix.target.threads }}" != "" ]; then
+            CACHE_PREFIX="${CACHE_PREFIX}-threads-${{ matrix.target.threads }}"
+          fi
+          echo "prefix=${CACHE_PREFIX}" >> $GITHUB_OUTPUT
+          echo "Cache prefix: ${CACHE_PREFIX}"
+
+      - name: Download cached build artifacts
+        shell: bash
+        run: |
+          set +e  # Don't fail if cache is not found
+          CACHE_PREFIX="${{ steps.cache-prefix.outputs.prefix }}"
+          echo "Attempting to download cache artifacts for: ${CACHE_PREFIX}"
+
+          # Strategy 1: Try same branch first
+          BRANCH="${{ github.ref_name }}"
+          SAME_BRANCH_RUNS=$(gh run list \
+            --workflow="${{ github.workflow }}" \
+            --branch="${BRANCH}" \
+            --limit=50 \
+            --json databaseId \
+            -q '.[].databaseId' 2>/dev/null || echo "")
+
+          try_download_run() {
+            local RUN="$1"
+            local PREFIX="$2"
+            echo "  Trying run ${RUN}..."
+
+            TMP=$(mktemp -d)
+            trap "rm -rf ${TMP}" RETURN
+
+            for ARTIFACT_TYPE in "vcpkg-installed" "vcpkg-buildtrees"; do
+              ARTIFACT_NAME="${ARTIFACT_TYPE}-${PREFIX}"
+              if gh run download "${RUN}" --name "${ARTIFACT_NAME}" --dir "${TMP}" 2>/dev/null; then
+                echo "    ✓ Found ${ARTIFACT_TYPE}"
+
+                if [ "${ARTIFACT_TYPE}" = "vcpkg-installed" ]; then
+                  [ -d "${TMP}/vcpkg/installed" ] && cp -r "${TMP}/vcpkg/installed" vcpkg/ || true
+                  [ -d "${TMP}/vcpkg/packages" ] && cp -r "${TMP}/vcpkg/packages" vcpkg/ || true
+                elif [ "${ARTIFACT_TYPE}" = "vcpkg-buildtrees" ]; then
+                  [ -d "${TMP}/vcpkg/buildtrees" ] && cp -r "${TMP}/vcpkg/buildtrees" vcpkg/ || true
+                fi
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          # Try branch-specific runs
+          for RUN in ${SAME_BRANCH_RUNS}; do
+            if try_download_run "${RUN}" "${CACHE_PREFIX}"; then
+              echo "✓ Downloaded cache from branch run ${RUN}"
+              exit 0
+            fi
+          done
+
+          # Strategy 2: Try all recent runs if branch strategy failed
+          echo "No cache found on branch, trying all recent runs..."
+          ALL_RUNS=$(gh run list \
+            --workflow="${{ github.workflow }}" \
+            --limit=50 \
+            --json databaseId \
+            -q '.[].databaseId' 2>/dev/null || echo "")
+
+          for RUN in ${ALL_RUNS}; do
+            if try_download_run "${RUN}" "${CACHE_PREFIX}"; then
+              echo "✓ Downloaded cache from run ${RUN}"
+              exit 0
+            fi
+          done
+
+          echo "::warning::No usable cache artifacts found, proceeding with fresh build..."
+          exit 0
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
 
       - name: Setup for x86 Linux
         if: matrix.target.vcpkg_triplet == 'x86-linux'
@@ -245,18 +323,25 @@ jobs:
           set -e
           echo "ANDROID_NDK_HOME=${{ steps.setup-ndk.outputs.ndk-path }}" >> $GITHUB_ENV
 
-      - name: Prepare sccache for caching compiler outputs
-        uses: mozilla-actions/sccache-action@v0.0.9
-        with:
-          disable_annotations: true
+      - name: Setup ccache for build caching
+        uses: hendrikmuhs/ccache-action@v1.2
+        with: # Just install
+          save: false
+          restore: false
 
-      - name: Configure sccache
+      - name: Configure ccache+vcpkg environment
         shell: bash
         run: |
           set -e
-          echo "SCCACHE_CACHE_SIZE=2G" | tee -a $GITHUB_ENV
-          SCCACHE_DIR=$(sccache --show-stats | grep 'Local disk:' | sed 's/.*: //' | tr -d '"')
-          echo "SCCACHE_DIR=$(echo "$SCCACHE_DIR" | sed -E 's#^([A-Z]):#/\L\1#; s#\\#/#g')" | tee -a $GITHUB_ENV
+          mkdir -p "${{ github.workspace }}/ccache"
+          echo "CCACHE_DIR=${{ github.workspace }}/ccache" >> $GITHUB_ENV
+          echo "CCACHE_COMPILERCHECK=content" >> $GITHUB_ENV
+          echo "CCACHE_SLOPPINESS=include_file_mtime,include_file_ctime" >> $GITHUB_ENV
+          echo "CCACHE_FILESTATMATCHES=false" >> $GITHUB_ENV
+          # ---
+          echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+          echo "VCPKG_KEEP_ENV_VARS=CCACHE_DIR;CCACHE_COMPILERCHECK;CCACHE_SLOPPINESS;CCACHE_FILESTATMATCHES;CMAKE_CXX_COMPILER_LAUNCHER;CMAKE_C_COMPILER_LAUNCHER" >> $GITHUB_ENV
 
       - name: Build with vcpkg
         shell: bash
@@ -267,19 +352,15 @@ jobs:
           vcpkg_exe="vcpkg/vcpkg${{ matrix.target.os == 'windows-2025' && '.exe' || '' }}"
           # Force rebuild relying on ccache, as vcpkg's cache is sometimes too aggressive (designed for external deps)
           $vcpkg_exe remove $($vcpkg_exe list | awk '{print $1}' | sed 's/\[[^]]*\]//g' | tr '\n' ' ') || true
+          ccache --show-stats --evict-older-than 10d --zero-stats -vv && ccache --show-stats -vv
           $vcpkg_exe install gdext
+          ccache --show-stats -vv
         env:
           VCPKG_DISABLE_METRICS: 1
           VCPKG_DEFAULT_TRIPLET: ${{ matrix.target.vcpkg_triplet }}
           VCPKG_OVERLAY_TRIPLETS: vcpkg_triplets
           VCPKG_OVERLAY_PORTS: vcpkg_ports
           GDEXT_CMAKE_ARGS: -DGODOTCPP_TARGET=${{ matrix.target-type }} -DGODOTCPP_PRECISION=${{ matrix.float-precision }} ${{ env.gdext_cmake_args }}
-
-      - name: Show sccache stats
-        shell: bash
-        run: |
-          set -e
-          sccache --show-stats
 
       - name: Copy to addon folder
         shell: bash
@@ -301,27 +382,16 @@ jobs:
             demo/addons/*/*
             .fake-path-to-force-root-directory
 
-      - name: Upload vcpkg installed artifact
+      - name: Upload vcpkg cache (installed packages)
         uses: actions/upload-artifact@v7
-        if: always()
+        if: "!cancelled()"
         with:
-          name: vcpkg-installed-${{ matrix.target.vcpkg_triplet }}-${{ matrix.target-type }}-${{ matrix.float-precision }}-${{ matrix.target.threads || '' }}
-          path: | # /tmp/ forces consistant root directory to /
+          name: ${{ steps.cache-prefix.outputs.prefix }}
+          path: |
             vcpkg/installed/
-            ${{ env.SCCACHE_DIR }}
-            /.fake-path-to-force-root-directory
-
-      - name: Upload vcpkg buildtrees artifact
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: vcpkg-buildtrees-packages-${{ matrix.target.vcpkg_triplet }}-${{ matrix.target-type }}-${{ matrix.float-precision }}-${{ matrix.target.threads || '' }}
-          path: | # /tmp/ forces consistant root directory to /
             vcpkg/buildtrees/
-            vcpkg/packages/
-            vcpkg/downloads/
+            ${{ github.workspace }}/ccache
             /.fake-path-to-force-root-directory
-      # </Cache save and export artifacts>
 
   test:
     needs: [read-versions, build]

@@ -4,26 +4,7 @@ include(CheckCXXCompilerFlag)
 
 message(STATUS "Using toolchain file: " "${CMAKE_TOOLCHAIN_FILE}")
 option(ENABLE_WERROR "Enable warnings as errors (ON|OFF)" OFF)
-
-# Auto-enable sccache or ccache if available since we are rebuilding godot-cpp and the bindings frequently
-set(CACHE_PROGRAMS sccache ccache)
-set(CACHE_EXECUTABLE "")
-foreach(CACHE_PROG IN LISTS CACHE_PROGRAMS)
-  find_program(${CACHE_PROG}_EXECUTABLE ${CACHE_PROG})
-  if(${CACHE_PROG}_EXECUTABLE)
-    set(CACHE_EXECUTABLE ${${CACHE_PROG}_EXECUTABLE})
-    message(STATUS "Using ${CACHE_PROG} as compiler launcher: ${CACHE_EXECUTABLE}")
-    break()
-  endif()
-endforeach()
-if(CACHE_EXECUTABLE)
-  set(CMAKE_C_COMPILER_LAUNCHER ${CACHE_EXECUTABLE})
-  set(CMAKE_CXX_COMPILER_LAUNCHER ${CACHE_EXECUTABLE})
-  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
-  cmake_policy(SET CMP0141 NEW)
-else()
-  message(STATUS "Neither sccache nor ccache found, not using a compiler launcher")
-endif()
+option(ENABLE_SANITIZERS "Enable sanitizers (ON|OFF)" OFF)
 
 # Auto-force full LTO in release builds if available
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -132,7 +113,7 @@ endif()
 set_source_files_properties(${SOURCES} PROPERTIES COMPILE_OPTIONS "${WARN_FLAGS}")
 
 # Also figure out runtime issues in debug builds with sanitizers if supported by the compiler
-if(ENABLE_WERROR)
+if(ENABLE_SANITIZERS)
   function(enable_sanitizers target)
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
       # Exit if using standard MinGW-GCC (prevents your original link error)

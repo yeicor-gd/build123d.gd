@@ -22,9 +22,9 @@ export VCPKG_DISABLE_METRICS=1
 #export VCPKG_DEFAULT_TRIPLET=x64-linux
 export VCPKG_OVERLAY_TRIPLETS="$SCRIPT_DIR/vcpkg_triplets"
 export VCPKG_OVERLAY_PORTS="$SCRIPT_DIR/vcpkg_ports"
-export GDEXT_CMAKE_ARGS="-DGODOTCPP_TARGET=template_debug -DGODOTCPP_PRECISION=single -DGODOTCPP_THREADS=on"
+export GDEXT_CMAKE_ARGS="-DGODOTCPP_TARGET=template_debug -DGODOTCPP_PRECISION=single -DGODOTCPP_THREADS=on -DENABLE_WERROR=on"
 if [ "$GODOT_VERSION" != "system" ]; then
-    export GDEXT_CMAKE_ARGS="$GDEXT_CMAKE_ARGS -DENABLE_WERROR=on"
+    export GDEXT_CMAKE_ARGS="$GDEXT_CMAKE_ARGS -DENABLE_SANITIZERS=on"
 fi
 
 DO_BUILD="${DO_BUILD:-1}"
@@ -136,19 +136,18 @@ else
 fi
 
 cd "$SCRIPT_DIR"
-
 MY_LD_PRELOAD=""
 if [ "$GODOT_VERSION" != "system" ]; then
     MY_LD_PRELOAD="LD_PRELOAD=$(gcc -print-file-name=libasan.so)"
 fi
 
-EDITOR_LOG=$(mktemp)
-trap "rm -f '$EDITOR_LOG'" EXIT
+IMPORT_LOG=$(mktemp)
+trap "rm -f '$IMPORT_LOG'" EXIT
 RUNTIME_LOG=$(mktemp)
 trap "rm -f '$RUNTIME_LOG'" EXIT
 
-$MY_LD_PRELOAD LSAN_OPTIONS=detect_leaks=0 $GODOT_BIN --editor --path "$SCRIPT_DIR/demo" --headless --quit 2>&1 | tee -a "$EDITOR_LOG" || true
-$MY_LD_PRELOAD $GODOT_BIN --path "$SCRIPT_DIR/demo" --headless 2>&1 | tee -a "$RUNTIME_LOG" || true
+eval "$MY_LD_PRELOAD LSAN_OPTIONS=detect_leaks=0 $GODOT_BIN --import --path \"$SCRIPT_DIR/demo\" --headless --quit 2>&1 | tee -a \"$IMPORT_LOG\"; EXIT_CODE=\${PIPESTATUS[0]}; if [ \$EXIT_CODE -ne 0 ]; then exit \$EXIT_CODE; fi"
+eval "$MY_LD_PRELOAD $GODOT_BIN --path \"$SCRIPT_DIR/demo\" --headless 2>&1 | tee -a \"$RUNTIME_LOG\"; EXIT_CODE=\${PIPESTATUS[0]}; if [ \$EXIT_CODE -ne 0 ]; then exit \$EXIT_CODE; fi"
 
 _extract_runtime_errors() {
     local log_file="$1"
@@ -169,7 +168,7 @@ _extract_runtime_errors() {
     fi
 }
 
-IMPORT_ERRORS=$(_extract_runtime_errors "$EDITOR_LOG" true 2>/dev/null || true)
+IMPORT_ERRORS=$(_extract_runtime_errors "$IMPORT_LOG" true 2>/dev/null || true)
 RUN_ERRORS=$(_extract_runtime_errors "$RUNTIME_LOG" false 2>/dev/null || true)
 
 ERRORS="${IMPORT_ERRORS}"$'\n'"${RUN_ERRORS}"
