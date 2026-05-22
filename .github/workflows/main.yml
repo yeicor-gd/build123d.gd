@@ -328,7 +328,6 @@ jobs:
         with: # Just install
           save: false
           restore: false
-          create-symlink: true
 
       - name: Configure ccache+vcpkg environment
         shell: bash
