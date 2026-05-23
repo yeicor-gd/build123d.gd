@@ -192,7 +192,7 @@ jobs:
           SAME_BRANCH_RUNS=$(gh run list \
             --workflow="${{ github.workflow }}" \
             --branch="${BRANCH}" \
-            --limit=10 \
+            --limit=25 \
             --json databaseId \
             -q '.[].databaseId' 2>/dev/null || echo "")
 
@@ -254,7 +254,7 @@ jobs:
           echo "No cache found on branch, trying all recent runs..."
           ALL_RUNS=$(gh run list \
             --workflow="${{ github.workflow }}" \
-            --limit=10 \
+            --limit=25 \
             --json databaseId \
             -q '.[].databaseId' 2>/dev/null || echo "")
 
@@ -359,7 +359,11 @@ jobs:
         run: |
           set -e
           mkdir -p "${{ github.workspace }}/ccache"
-          echo "CCACHE_DIR=${{ github.workspace }}/ccache" >> $GITHUB_ENV
+          if [ "${{ matrix.target.os }}" = "windows-2025-vs2026" ]; then
+            echo "CCACHE_DIR=${{ github.workspace }}\\ccache" >> $GITHUB_ENV
+          else
+            echo "CCACHE_DIR=${{ github.workspace }}/ccache" >> $GITHUB_ENV
+          fi
           echo "CCACHE_COMPILERCHECK=content" >> $GITHUB_ENV
           echo "CCACHE_SLOPPINESS=include_file_mtime,include_file_ctime" >> $GITHUB_ENV
           echo "CCACHE_FILESTATMATCHES=false" >> $GITHUB_ENV
@@ -367,6 +371,12 @@ jobs:
           echo "CMAKE_CXX_COMPILER_LAUNCHER=$(command -v ccache)" >> $GITHUB_ENV
           echo "CMAKE_C_COMPILER_LAUNCHER=$(command -v ccache)" >> $GITHUB_ENV
           echo "VCPKG_KEEP_ENV_VARS=CCACHE_DIR;CCACHE_COMPILERCHECK;CCACHE_SLOPPINESS;CCACHE_FILESTATMATCHES;CMAKE_CXX_COMPILER_LAUNCHER;CMAKE_C_COMPILER_LAUNCHER" >> $GITHUB_ENV
+          # ---
+          echo VCPKG_DISABLE_METRICS=1 >> $GITHUB_ENV
+          echo VCPKG_DEFAULT_TRIPLET=${{ matrix.target.vcpkg_triplet }} >> $GITHUB_ENV
+          echo VCPKG_OVERLAY_TRIPLETS=vcpkg_triplets >> $GITHUB_ENV
+          echo VCPKG_OVERLAY_PORTS=vcpkg_ports >> $GITHUB_ENV
+          echo "GDEXT_CMAKE_ARGS=-DGODOTCPP_TARGET=${{ matrix.target-type }} -DGODOTCPP_PRECISION=${{ matrix.float-precision }} ${{ env.gdext_cmake_args }}" >> $GITHUB_ENV
 
       - name: Build with vcpkg
         shell: bash
@@ -374,19 +384,11 @@ jobs:
         run: |
           set -e
           "vcpkg/bootstrap-vcpkg${{ matrix.target.os == 'windows-2025-vs2026' && '.bat' || '.sh' }}"
-          echo "-DGODOTCPP_TARGET=${{ matrix.target-type }} -DGODOTCPP_PRECISION=${{ matrix.float-precision }} ${{ env.gdext_cmake_args }}" > __GDEXT_CMAKE_ARGS
+          echo "${GDEXT_CMAKE_ARGS}" > __GDEXT_CMAKE_ARGS  # Windows needs this workaround?
           vcpkg_exe="vcpkg/vcpkg${{ matrix.target.os == 'windows-2025-vs2026' && '.exe' || '' }}"
-          # Force rebuild relying on ccache, as vcpkg's cache is sometimes too aggressive (designed for external deps)
-          $vcpkg_exe remove $($vcpkg_exe list | awk '{print $1}' | sed 's/\[[^]]*\]//g' | tr '\n' ' ') || true
           ccache --show-stats --evict-older-than 10d --zero-stats -vv && ccache --show-stats -vv
           $vcpkg_exe install gdext
           ccache --show-stats -vv
-        env:
-          VCPKG_DISABLE_METRICS: 1
-          VCPKG_DEFAULT_TRIPLET: ${{ matrix.target.vcpkg_triplet }}
-          VCPKG_OVERLAY_TRIPLETS: vcpkg_triplets
-          VCPKG_OVERLAY_PORTS: vcpkg_ports
-          GDEXT_CMAKE_ARGS: -DGODOTCPP_TARGET=${{ matrix.target-type }} -DGODOTCPP_PRECISION=${{ matrix.float-precision }} ${{ env.gdext_cmake_args }}
 
       - name: Copy to addon folder
         shell: bash
@@ -414,8 +416,6 @@ jobs:
         with:
           name: ${{ steps.cache-artifact.outputs.artifact }}
           path: |
-            vcpkg/installed/
-            vcpkg/buildtrees/
             ccache
             /.fake-path-to-force-root-directory
 
