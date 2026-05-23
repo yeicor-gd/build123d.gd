@@ -168,64 +168,67 @@ jobs:
           name: godot-api-${{ matrix.float-precision }}
           path: godot-cpp/gdextension/
 
-      - name: Build cache artifact prefix
-        id: cache-prefix
+      - name: Build cache artifact name
+        id: cache-artifact
         shell: bash
         run: |
-          # Build the artifact prefix for cache lookups
-          CACHE_PREFIX="build-cache-${{ matrix.target.vcpkg_triplet }}-${{ matrix.target-type }}-${{ matrix.float-precision }}"
+          # Build the artifact name for cache lookups
+          CACHE_ARTIFACT="build-cache-${{ matrix.target.vcpkg_triplet }}-${{ matrix.target-type }}-${{ matrix.float-precision }}"
           if [ "${{ matrix.target.threads }}" != "" ]; then
-            CACHE_PREFIX="${CACHE_PREFIX}-threads-${{ matrix.target.threads }}"
+            CACHE_ARTIFACT="${CACHE_ARTIFACT}-threads-${{ matrix.target.threads }}"
           fi
-          echo "prefix=${CACHE_PREFIX}" >> $GITHUB_OUTPUT
-          echo "Cache prefix: ${CACHE_PREFIX}"
+          echo "artifact=${CACHE_ARTIFACT}" >> $GITHUB_OUTPUT
+          echo "Cache artifact: ${CACHE_ARTIFACT}"
 
-      - name: Download cached build artifacts
+      - name: Download cached build artifact
         shell: bash
         run: |
           set +e  # Don't fail if cache is not found
-          CACHE_PREFIX="${{ steps.cache-prefix.outputs.prefix }}"
-          echo "Attempting to download cache artifacts for: ${CACHE_PREFIX}"
+          CACHE_ARTIFACT="${{ steps.cache-artifact.outputs.artifact }}"
+          echo "Attempting to download cache artifact: ${CACHE_ARTIFACT}"
 
           # Strategy 1: Try same branch first
           BRANCH="${{ github.ref_name }}"
           SAME_BRANCH_RUNS=$(gh run list \
             --workflow="${{ github.workflow }}" \
             --branch="${BRANCH}" \
-            --limit=50 \
+            --limit=10 \
             --json databaseId \
             -q '.[].databaseId' 2>/dev/null || echo "")
 
           try_download_run() {
             local RUN="$1"
-            local PREFIX="$2"
+            local ARTIFACT_NAME="$2"
             echo "  Trying run ${RUN}..."
 
             TMP=$(mktemp -d)
-            trap "rm -rf ${TMP}" RETURN
+            trap "echo \"    Cleaning up temporary directory ${TMP}\"; rm -rf ${TMP}" RETURN
 
-            for ARTIFACT_TYPE in "vcpkg-installed" "vcpkg-buildtrees"; do
-              ARTIFACT_NAME="${ARTIFACT_TYPE}-${PREFIX}"
-              if gh run download "${RUN}" --name "${ARTIFACT_NAME}" --dir "${TMP}" 2>/dev/null; then
-                echo "    ✓ Found ${ARTIFACT_TYPE}"
-
-                if [ "${ARTIFACT_TYPE}" = "vcpkg-installed" ]; then
-                  [ -d "${TMP}/vcpkg/installed" ] && cp -r "${TMP}/vcpkg/installed" vcpkg/ || true
-                  [ -d "${TMP}/vcpkg/packages" ] && cp -r "${TMP}/vcpkg/packages" vcpkg/ || true
-                elif [ "${ARTIFACT_TYPE}" = "vcpkg-buildtrees" ]; then
-                  [ -d "${TMP}/vcpkg/buildtrees" ] && cp -r "${TMP}/vcpkg/buildtrees" vcpkg/ || true
-                fi
-                return 0
-              fi
-            done
+            if gh run download "${RUN}" --name "${ARTIFACT_NAME}" --dir "${TMP}" 2>/dev/null; then
+              echo "    ✓ Found and successfully downloaded ${ARTIFACT_NAME}, copying contents to workspace..."
+              cp -r "${TMP}"/* / 2>/dev/null || true
+            fi
+            echo "    ✗ No artifact named ${ARTIFACT_NAME} in run ${RUN}"
             return 1
           }
 
           # Try branch-specific runs
+          deleting=false
           for RUN in ${SAME_BRANCH_RUNS}; do
-            if try_download_run "${RUN}" "${CACHE_PREFIX}"; then
+            if [ "$deleting" = true ]; then
+              echo "Deleting older run artifact ${RUN}..."
+              echo "Deleting older run artifact ${RUN}..."
+              ARTIFACT_ID=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN}/artifacts" --jq ".artifacts[] | select(.name == \"${CACHE_ARTIFACT}\") | .id")
+              if [ -n "$ARTIFACT_ID" ]; then
+                echo "  Found artifact ID $ARTIFACT_ID for run $RUN, deleting..."
+                gh api -X DELETE "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}"
+                echo "  Deleted artifact $ARTIFACT_ID from run $RUN."
+              else
+                echo "  No artifact named ${CACHE_ARTIFACT} found in run $RUN."
+              fi
+            else if try_download_run "${RUN}" "${CACHE_ARTIFACT}"; then
               echo "✓ Downloaded cache from branch run ${RUN}"
-              exit 0
+              echo "Since this is the same branch, we will delete all older runs to save space, as they are unlikely to be relevant anymore."
             fi
           done
 
@@ -233,13 +236,14 @@ jobs:
           echo "No cache found on branch, trying all recent runs..."
           ALL_RUNS=$(gh run list \
             --workflow="${{ github.workflow }}" \
-            --limit=50 \
+            --limit=10 \
             --json databaseId \
             -q '.[].databaseId' 2>/dev/null || echo "")
 
           for RUN in ${ALL_RUNS}; do
-            if try_download_run "${RUN}" "${CACHE_PREFIX}"; then
+            if try_download_run "${RUN}" "${CACHE_ARTIFACT}"; then
               echo "✓ Downloaded cache from run ${RUN}"
+              echo "Since this is a different branch, we won't delete any runs, as they may still be relevant for their respective branches."
               exit 0
             fi
           done
@@ -387,11 +391,11 @@ jobs:
         uses: actions/upload-artifact@v7
         if: "!cancelled()"
         with:
-          name: ${{ steps.cache-prefix.outputs.prefix }}
+          name: ${{ steps.cache-artifact.outputs.artifact }}
           path: |
             vcpkg/installed/
             vcpkg/buildtrees/
-            ${{ github.workspace }}/ccache
+            ccache
             /.fake-path-to-force-root-directory
 
   test:
