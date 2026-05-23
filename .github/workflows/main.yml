@@ -124,12 +124,12 @@ jobs:
             { vcpkg_triplet: x86-linux, os: ubuntu-24.04 },
             { vcpkg_triplet: arm64-linux, os: ubuntu-24.04-arm },
             { vcpkg_triplet: arm-linux, os: ubuntu-24.04-arm },
-            { vcpkg_triplet: x64-mingw-static, os: windows-2025 },
-            { vcpkg_triplet: x86-mingw-static, os: windows-2025 },
-            { vcpkg_triplet: arm64-mingw-static, os: windows-2025 },
-            { vcpkg_triplet: x64-windows-static, os: windows-2025 }, # MSVC instead of mingw
-            { vcpkg_triplet: x86-windows-static, os: windows-2025 }, # MSVC instead of mingw
-            { vcpkg_triplet: arm64-windows-static, os: windows-2025 }, # MSVC instead of mingw
+            { vcpkg_triplet: x64-mingw-static, os: windows-2025-vs2026 },
+            { vcpkg_triplet: x86-mingw-static, os: windows-2025-vs2026 },
+            { vcpkg_triplet: arm64-mingw-static, os: windows-2025-vs2026 },
+            { vcpkg_triplet: x64-windows-static, os: windows-2025-vs2026 }, # MSVC instead of mingw
+            { vcpkg_triplet: x86-windows-static, os: windows-2025-vs2026 }, # MSVC instead of mingw
+            { vcpkg_triplet: arm64-windows-static, os: windows-2025-vs2026 }, # MSVC instead of mingw
             { vcpkg_triplet: arm64-osx, os: macos-15 },
             { vcpkg_triplet: x64-osx, os: macos-15 },
             { vcpkg_triplet: wasm32-emscripten, os: ubuntu-24.04, threads: off },
@@ -207,6 +207,7 @@ jobs:
             if gh run download "${RUN}" --name "${ARTIFACT_NAME}" --dir "${TMP}" 2>/dev/null; then
               echo "    ✓ Found and successfully downloaded ${ARTIFACT_NAME}, copying contents to workspace..."
               cp -r "${TMP}"/* / 2>/dev/null || true
+              return 0
             fi
             echo "    ✗ No artifact named ${ARTIFACT_NAME} in run ${RUN}"
             return 1
@@ -217,7 +218,6 @@ jobs:
           for RUN in ${SAME_BRANCH_RUNS}; do
             if [ "$deleting" = true ]; then
               echo "Deleting older run artifact ${RUN}..."
-              echo "Deleting older run artifact ${RUN}..."
               ARTIFACT_ID=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN}/artifacts" --jq ".artifacts[] | select(.name == \"${CACHE_ARTIFACT}\") | .id")
               if [ -n "$ARTIFACT_ID" ]; then
                 echo "  Found artifact ID $ARTIFACT_ID for run $RUN, deleting..."
@@ -226,7 +226,7 @@ jobs:
               else
                 echo "  No artifact named ${CACHE_ARTIFACT} found in run $RUN."
               fi
-            else if try_download_run "${RUN}" "${CACHE_ARTIFACT}"; then
+            elif try_download_run "${RUN}" "${CACHE_ARTIFACT}"; then
               echo "✓ Downloaded cache from branch run ${RUN}"
               echo "Since this is the same branch, we will delete all older runs to save space, as they are unlikely to be relevant anymore."
               deleting=true
@@ -251,6 +251,7 @@ jobs:
 
           echo "::warning::No usable cache artifacts found, proceeding with fresh build..."
           exit 0
+
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -288,7 +289,7 @@ jobs:
           sudo apt-get install -y "libx11-dev${arch_selector}" "libgl1-mesa-dev${arch_selector}" "libfontconfig-dev${arch_selector}" "autoconf" "autoconf-archive" "automake" "libtool"
 
       - name: Setup MinGW (Windows) # MSVC is already set up by default
-        if: matrix.target.os == 'windows-2025' && contains(matrix.target.vcpkg_triplet, '-mingw')
+        if: matrix.target.os == 'windows-2025-vs2026' && contains(matrix.target.vcpkg_triplet, '-mingw')
         uses: egor-tensin/setup-mingw@v3
         with:
           version: ${{ needs.read-versions.outputs.mingw_version }}
@@ -353,9 +354,9 @@ jobs:
         timeout-minutes: 330 # 5h30 to account for very long builds on emscripten with cold cache (which slightly exceeds the github max runtime)
         run: |
           set -e
-          "vcpkg/bootstrap-vcpkg${{ matrix.target.os == 'windows-2025' && '.bat' || '.sh' }}"
+          "vcpkg/bootstrap-vcpkg${{ matrix.target.os == 'windows-2025-vs2026' && '.bat' || '.sh' }}"
           echo "-DGODOTCPP_TARGET=${{ matrix.target-type }} -DGODOTCPP_PRECISION=${{ matrix.float-precision }} ${{ env.gdext_cmake_args }}" > __GDEXT_CMAKE_ARGS
-          vcpkg_exe="vcpkg/vcpkg${{ matrix.target.os == 'windows-2025' && '.exe' || '' }}"
+          vcpkg_exe="vcpkg/vcpkg${{ matrix.target.os == 'windows-2025-vs2026' && '.exe' || '' }}"
           # Force rebuild relying on ccache, as vcpkg's cache is sometimes too aggressive (designed for external deps)
           $vcpkg_exe remove $($vcpkg_exe list | awk '{print $1}' | sed 's/\[[^]]*\]//g' | tr '\n' ' ') || true
           ccache --show-stats --evict-older-than 10d --zero-stats -vv && ccache --show-stats -vv
@@ -409,7 +410,7 @@ jobs:
             { os: ubuntu-24.04, export_name: Linux },
             { os: ubuntu-24.04, export_name: Web },
             { os: ubuntu-24.04, export_name: Android },
-            { os: windows-2025, export_name: "Windows Desktop" },
+            { os: windows-2025-vs2026, export_name: "Windows Desktop" },
             { os: macos-15, export_name: macOS },
             { os: ubuntu-24.04, export_name: iOS }, # I do not have a developer account (which is required to actually build the app on macos), instead use ubuntu and just export the code to compile.
           ]
