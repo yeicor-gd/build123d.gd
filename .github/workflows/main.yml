@@ -218,7 +218,21 @@ jobs:
           for RUN in ${SAME_BRANCH_RUNS}; do
             if [ "$deleting" = true ]; then
               echo "Deleting older run artifact ${RUN}..."
-              ARTIFACT_ID=$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN}/artifacts" --jq ".artifacts[] | select(.name == \"${CACHE_ARTIFACT}\") | .id")
+              ARTIFACT_ID=$(
+                gh api \
+                  "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN}/artifacts" \
+                  --jq ".artifacts[] | select(.name == \"${CACHE_ARTIFACT}\") | .id" \
+                  2>/dev/null
+              )
+              if [[ "$ARTIFACT_ID" =~ ^[0-9]+$ ]]; then
+                echo "  Found artifact ID $ARTIFACT_ID for run $RUN, deleting..."
+                gh api \
+                  -X DELETE \
+                  "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}"
+                echo "  Deleted artifact $ARTIFACT_ID from run $RUN."
+              else
+                echo "  No valid artifact ID found for run $RUN."
+              fi
               if [ -n "$ARTIFACT_ID" ]; then
                 echo "  Found artifact ID $ARTIFACT_ID for run $RUN, deleting..."
                 gh api -X DELETE "repos/${GITHUB_REPOSITORY}/actions/artifacts/${ARTIFACT_ID}"
@@ -232,6 +246,9 @@ jobs:
               deleting=true
             fi
           done
+          if [ "$deleting" = true ]; then
+            exit 0  # Cache found and downloaded from same branch, no need to try other runs
+          fi
 
           # Strategy 2: Try all recent runs if branch strategy failed
           echo "No cache found on branch, trying all recent runs..."
