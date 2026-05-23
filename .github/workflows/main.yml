@@ -229,6 +229,7 @@ jobs:
             else if try_download_run "${RUN}" "${CACHE_ARTIFACT}"; then
               echo "✓ Downloaded cache from branch run ${RUN}"
               echo "Since this is the same branch, we will delete all older runs to save space, as they are unlikely to be relevant anymore."
+              deleting=true
             fi
           done
 
