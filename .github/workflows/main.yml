@@ -351,6 +351,8 @@ jobs:
         with: # Just install
           save: false
           restore: false
+          install: binary # Much more up-to-date than the version available in package managers
+          job-summary: ""
 
       - name: Configure ccache+vcpkg environment
         shell: bash
