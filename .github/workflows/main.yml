@@ -411,14 +411,16 @@ jobs:
           name: gdext-${{ matrix.target.vcpkg_triplet }}-${{ matrix.target-type }}-${{ matrix.float-precision }}-${{ matrix.target.threads || '' }}
           path: |
             demo/addons/*/*
-            .fake-path-to-force-root-directory
+            ${ github.workspace }/.fake-path-to-force-artifact-root
 
       - name: Upload ccache artifact (for faster subsequent builds)
         uses: actions/upload-artifact@v7
         if: "!cancelled()"
         with:
           name: ${{ steps.ccache-artifact.outputs.artifact }}
-          path: ccache
+          path: |
+            ccache
+            ${ github.workspace }/.fake-path-to-force-artifact-root
 
   test:
     needs: [read-versions, build]
