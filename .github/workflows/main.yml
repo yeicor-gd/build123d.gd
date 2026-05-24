@@ -10,6 +10,9 @@ on:
     branches:
       - main
   merge_group:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   read-versions:
     runs-on: ubuntu-24.04
@@ -168,23 +171,23 @@ jobs:
           name: godot-api-${{ matrix.float-precision }}
           path: godot-cpp/gdextension/
 
-      - name: Build cache artifact name
-        id: cache-artifact
+      - name: Build ccache artifact name
+        id: ccache-artifact
         shell: bash
         run: |
           # Build the artifact name for cache lookups
-          CACHE_ARTIFACT="build-cache-${{ matrix.target.vcpkg_triplet }}-${{ matrix.target-type }}-${{ matrix.float-precision }}"
+          CACHE_ARTIFACT="ccache-${{ matrix.target.vcpkg_triplet }}-${{ matrix.target-type }}-${{ matrix.float-precision }}"
           if [ "${{ matrix.target.threads }}" != "" ]; then
             CACHE_ARTIFACT="${CACHE_ARTIFACT}-threads-${{ matrix.target.threads }}"
           fi
           echo "artifact=${CACHE_ARTIFACT}" >> $GITHUB_OUTPUT
-          echo "Cache artifact: ${CACHE_ARTIFACT}"
+          echo "Ccache artifact: ${CACHE_ARTIFACT}"
 
       - name: Download cached build artifact
         shell: bash
         run: |
           set +e  # Don't fail if cache is not found
-          CACHE_ARTIFACT="${{ steps.cache-artifact.outputs.artifact }}"
+          CACHE_ARTIFACT="${{ steps.ccache-artifact.outputs.artifact }}"
           echo "Attempting to download cache artifact: ${CACHE_ARTIFACT}"
 
           # Strategy 1: Try same branch first
@@ -206,7 +209,7 @@ jobs:
 
             if gh run download "${RUN}" --name "${ARTIFACT_NAME}" --dir "${TMP}" 2>/dev/null; then
               echo "    ✓ Found and successfully downloaded ${ARTIFACT_NAME}, copying contents to workspace..."
-              cp -r "${TMP}"/* / 2>/dev/null || true
+              cp -r "${TMP}"/. "${{ github.workspace }}/"
               return 0
             fi
             echo "    ✗ No artifact named ${ARTIFACT_NAME} in run ${RUN}"
@@ -394,7 +397,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          files=$(find vcpkg/buildtrees/gdext -name "*.so" -o -name "*.dll" -o -name "*.pdb" -o -name "*.dylib")
+          files=$( find vcpkg/buildtrees/gdext \( -name "*.so" -o -name "*.dll" -o -name "*.pdb" -o -name "*.dylib" \) )
           if [ -z "$files" ]; then
             echo "No library files found"
             exit 1
@@ -410,14 +413,12 @@ jobs:
             demo/addons/*/*
             .fake-path-to-force-root-directory
 
-      - name: Upload vcpkg cache (installed packages)
+      - name: Upload ccache artifact (for faster subsequent builds)
         uses: actions/upload-artifact@v7
         if: "!cancelled()"
         with:
-          name: ${{ steps.cache-artifact.outputs.artifact }}
-          path: |
-            ccache
-            /.fake-path-to-force-root-directory
+          name: ${{ steps.ccache-artifact.outputs.artifact }}
+          path: ccache
 
   test:
     needs: [read-versions, build]
@@ -599,7 +600,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
         run: |
           set -ex
-          sleep $((RANDOM % 30 + 1))m
+          sleep $((RANDOM % 120 + 10))
           gh workflow run retry-workflow.yml -F run_id=${{ github.run_id }}
 
   success: # No-op success job for github ruleset detection
