@@ -45,15 +45,22 @@ void EllipseWire::build_ellipse(double p_major_radius, double p_minor_radius, co
             occt_utils::to_occt_dir(plane->get_normal()),
             occt_utils::to_occt_dir(plane->get_x_direction()));
         const gp_Elips ellipse(axis, p_major_radius, p_minor_radius);
+        
         BRepBuilderAPI_MakeEdge edge_builder(ellipse);
-        ERR_FAIL_COND_MSG(!edge_builder.IsDone(), "OpenCASCADE ellipse edge construction did not complete.");
+        if (!edge_builder.IsDone()) {
+            ERR_PRINT(vformat("EllipseWire.build_ellipse: edge construction did not complete"));
+            return;
+        }
 
         BRepBuilderAPI_MakeWire wire_builder;
         wire_builder.Add(edge_builder.Edge());
         wire_builder.Build();
-        ERR_FAIL_COND_MSG(!wire_builder.IsDone(), "OpenCASCADE ellipse wire construction did not complete.");
+        if (!wire_builder.IsDone()) {
+            ERR_PRINT(vformat("EllipseWire.build_ellipse: wire construction did not complete"));
+            return;
+        }
         set_occt_shape(wire_builder.Shape());
-    } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("EllipseWire.build_ellipse failed: %s", occt_utils::exception_to_string(e)));
     }
 }

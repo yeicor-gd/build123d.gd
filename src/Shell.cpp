@@ -31,7 +31,8 @@ bool Shell::is_closed() const {
     try {
         return BRep_Tool::IsClosed(get_occt_shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Shell.is_closed failed: %s", occt_utils::exception_to_string(failure)));
+        return false;
     }
 }
 
@@ -43,6 +44,7 @@ int Shell::get_face_count() const {
         TopExp::MapShapes(get_occt_shape(), TopAbs_FACE, indexed_faces);
         return indexed_faces.Extent();
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(0, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Shell.get_face_count failed: %s", occt_utils::exception_to_string(failure)));
+        return 0;
     }
 }

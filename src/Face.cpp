@@ -37,10 +37,13 @@ void build_face_from_wires_impl(Face *p_face, const Ref<Wire> &p_outer_wire, con
             builder.Add(occt_inner_wire);
         }
         builder.Build();
-        ERR_FAIL_COND_MSG(!builder.IsDone(), "OpenCASCADE face construction did not complete.");
+        if (!builder.IsDone()) {
+            ERR_PRINT(vformat("Face.build_from_wires failed: OpenCASCADE face construction did not complete."));
+            return;
+        }
         p_face->set_occt_shape(builder.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Face.build_from_wires failed: %s", occt_utils::exception_to_string(failure)));
     }
 }
 
@@ -77,7 +80,10 @@ void Face::build_from_wires(const Ref<Wire> &p_outer_wire, const Array &p_inner_
 }
 
 void Face::build_polygon(const PackedVector3Array &p_points, bool p_only_plane) {
-    ERR_FAIL_COND_MSG(p_points.size() < 3, "Face.build_polygon requires at least 3 points.");
+    if (p_points.size() < 3) {
+        ERR_PRINT(vformat("Face.build_polygon failed: requires at least 3 points."));
+        return;
+    }
 
     try {
         BRepBuilderAPI_MakePolygon polygon_builder;
@@ -86,29 +92,50 @@ void Face::build_polygon(const PackedVector3Array &p_points, bool p_only_plane) 
         }
         polygon_builder.Close();
         polygon_builder.Build();
-        ERR_FAIL_COND_MSG(!polygon_builder.IsDone(), "OpenCASCADE polygon wire construction did not complete.");
+        if (!polygon_builder.IsDone()) {
+            ERR_PRINT(vformat("Face.build_polygon failed: OpenCASCADE polygon wire construction did not complete."));
+            return;
+        }
 
         BRepBuilderAPI_MakeFace face_builder(TopoDS::Wire(polygon_builder.Shape()), p_only_plane ? Standard_True : Standard_False);
         face_builder.Build();
-        ERR_FAIL_COND_MSG(!face_builder.IsDone(), "OpenCASCADE polygon face construction did not complete.");
+        if (!face_builder.IsDone()) {
+            ERR_PRINT(vformat("Face.build_polygon failed: OpenCASCADE polygon face construction did not complete."));
+            return;
+        }
         set_occt_shape(face_builder.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Face.build_polygon failed: %s", occt_utils::exception_to_string(failure)));
     }
 }
 
 Ref<Face> Face::offset_2d(double p_distance) const {
-    ERR_FAIL_COND_V_MSG(is_null(), Ref<Face>(), "Face.offset_2d requires a non-null face.");
-    ERR_FAIL_COND_V_MSG(p_distance == 0.0, Ref<Face>(), "Face.offset_2d requires a non-zero distance.");
-    ERR_FAIL_COND_V_MSG(!is_planar(), Ref<Face>(), "Face.offset_2d currently requires a planar face.");
+    if (is_null()) {
+        ERR_PRINT(vformat("Face.offset_2d failed: requires a non-null face."));
+        return Ref<Face>();
+    }
+    if (p_distance == 0.0) {
+        ERR_PRINT(vformat("Face.offset_2d failed: requires a non-zero distance."));
+        return Ref<Face>();
+    }
+    if (!is_planar()) {
+        ERR_PRINT(vformat("Face.offset_2d failed: currently requires a planar face."));
+        return Ref<Face>();
+    }
 
     try {
         const Vector3 source_normal = get_normal();
         Ref<Wire> outer_wire = get_outer_wire();
-        ERR_FAIL_COND_V_MSG(outer_wire.is_null() || outer_wire->is_null(), Ref<Face>(), "Face.offset_2d requires a valid outer wire.");
+        if (outer_wire.is_null() || outer_wire->is_null()) {
+            ERR_PRINT(vformat("Face.offset_2d failed: requires a valid outer wire."));
+            return Ref<Face>();
+        }
 
         Ref<Wire> offset_outer_wire = outer_wire->offset_2d(p_distance);
-        ERR_FAIL_COND_V_MSG(offset_outer_wire.is_null() || offset_outer_wire->is_null(), Ref<Face>(), "Face.offset_2d could not offset the outer wire.");
+        if (offset_outer_wire.is_null() || offset_outer_wire->is_null()) {
+            ERR_PRINT(vformat("Face.offset_2d failed: could not offset the outer wire."));
+            return Ref<Face>();
+        }
 
         Array offset_inner_wires;
         const Array inner_wires = get_inner_wires();
@@ -135,71 +162,121 @@ Ref<Face> Face::offset_2d(double p_distance) const {
 
         return result;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<Face>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Face.offset_2d failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<Face>();
     }
 }
 
 Ref<Solid> Face::extruded(const Vector3 &p_direction) const {
-    ERR_FAIL_COND_V_MSG(is_null(), Ref<Solid>(), "Face.extruded requires a non-null face.");
-    ERR_FAIL_COND_V_MSG(p_direction.length() == 0.0, Ref<Solid>(), "Face.extruded requires a non-zero direction.");
+    if (is_null()) {
+        ERR_PRINT(vformat("Face.extruded failed: requires a non-null face."));
+        return Ref<Solid>();
+    }
+    if (p_direction.length() == 0.0) {
+        ERR_PRINT(vformat("Face.extruded failed: requires a non-zero direction."));
+        return Ref<Solid>();
+    }
 
     try {
         BRepPrimAPI_MakePrism builder(get_occt_shape(), occt_utils::to_occt_vec(p_direction), Standard_True, Standard_True);
         builder.Build();
-        ERR_FAIL_COND_V_MSG(!builder.IsDone(), Ref<Solid>(), "OpenCASCADE prism extrusion did not complete.");
+        if (!builder.IsDone()) {
+            ERR_PRINT(vformat("Face.extruded failed: OpenCASCADE prism extrusion did not complete."));
+            return Ref<Solid>();
+        }
 
         const TopoDS_Shape result = builder.Shape();
-        ERR_FAIL_COND_V_MSG(result.IsNull(), Ref<Solid>(), "OpenCASCADE prism extrusion returned a null shape.");
-        ERR_FAIL_COND_V_MSG(result.ShapeType() != TopAbs_SOLID, Ref<Solid>(), "Face.extruded expected a solid result.");
+        if (result.IsNull()) {
+            ERR_PRINT(vformat("Face.extruded failed: OpenCASCADE prism extrusion returned a null shape."));
+            return Ref<Solid>();
+        }
+        if (result.ShapeType() != TopAbs_SOLID) {
+            ERR_PRINT(vformat("Face.extruded failed: expected a solid result, got %d", static_cast<int>(result.ShapeType())));
+            return Ref<Solid>();
+        }
         return Solid::from_occt(TopoDS::Solid(result));
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<Solid>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Face.extruded failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<Solid>();
     }
 }
 
 Ref<Solid> Face::revolved(const Ref<Axis> &p_axis, double p_angle_radians) const {
-    ERR_FAIL_COND_V_MSG(is_null(), Ref<Solid>(), "Face.revolved requires a non-null face.");
-    ERR_FAIL_COND_V_MSG(p_axis.is_null(), Ref<Solid>(), "Face.revolved requires a non-null axis.");
-    ERR_FAIL_COND_V_MSG(p_angle_radians == 0.0, Ref<Solid>(), "Face.revolved requires a non-zero angle.");
+    if (is_null()) {
+        ERR_PRINT(vformat("Face.revolved failed: requires a non-null face."));
+        return Ref<Solid>();
+    }
+    if (p_axis.is_null()) {
+        ERR_PRINT(vformat("Face.revolved failed: requires a non-null axis."));
+        return Ref<Solid>();
+    }
+    if (p_angle_radians == 0.0) {
+        ERR_PRINT(vformat("Face.revolved failed: requires a non-zero angle."));
+        return Ref<Solid>();
+    }
 
     try {
         BRepPrimAPI_MakeRevol builder(get_occt_shape(), p_axis->get_occt_axis(), p_angle_radians, Standard_True);
         builder.Build();
-        ERR_FAIL_COND_V_MSG(!builder.IsDone(), Ref<Solid>(), "OpenCASCADE revolve operation did not complete.");
+        if (!builder.IsDone()) {
+            ERR_PRINT(vformat("Face.revolved failed: OpenCASCADE revolve operation did not complete."));
+            return Ref<Solid>();
+        }
 
         const TopoDS_Shape result = builder.Shape();
-        ERR_FAIL_COND_V_MSG(result.IsNull(), Ref<Solid>(), "OpenCASCADE revolve operation returned a null shape.");
-        ERR_FAIL_COND_V_MSG(result.ShapeType() != TopAbs_SOLID, Ref<Solid>(), "Face.revolved expected a solid result.");
+        if (result.IsNull()) {
+            ERR_PRINT(vformat("Face.revolved failed: OpenCASCADE revolve operation returned a null shape."));
+            return Ref<Solid>();
+        }
+        if (result.ShapeType() != TopAbs_SOLID) {
+            ERR_PRINT(vformat("Face.revolved failed: expected a solid result, got %d", static_cast<int>(result.ShapeType())));
+            return Ref<Solid>();
+        }
         return Solid::from_occt(TopoDS::Solid(result));
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<Solid>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Face.revolved failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<Solid>();
     }
 }
 
 bool Face::is_planar() const {
-    ERR_FAIL_COND_V_MSG(is_null(), false, "Face.is_planar requires a non-null shape.");
+    if (is_null()) {
+        ERR_PRINT(vformat("Face.is_planar failed: requires a non-null shape."));
+        return false;
+    }
 
     try {
         return BRepAdaptor_Surface(TopoDS::Face(get_occt_shape())).GetType() == GeomAbs_Plane;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Face.is_planar failed: %s", occt_utils::exception_to_string(failure)));
+        return false;
     }
 }
 
 Ref<Wire> Face::get_outer_wire() const {
-    ERR_FAIL_COND_V_MSG(is_null(), Ref<Wire>(), "Face.get_outer_wire requires a non-null shape.");
+    if (is_null()) {
+        ERR_PRINT(vformat("Face.get_outer_wire failed: requires a non-null shape."));
+        return Ref<Wire>();
+    }
 
     try {
         const TopoDS_Wire outer_wire = BRepTools::OuterWire(TopoDS::Face(get_occt_shape()));
-        ERR_FAIL_COND_V_MSG(outer_wire.IsNull(), Ref<Wire>(), "OpenCASCADE could not determine an outer wire for the face.");
+        if (outer_wire.IsNull()) {
+            ERR_PRINT(vformat("Face.get_outer_wire failed: OpenCASCADE could not determine an outer wire for the face."));
+            return Ref<Wire>();
+        }
         return Wire::from_occt(outer_wire);
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<Wire>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Face.get_outer_wire failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<Wire>();
     }
 }
 
 Array Face::get_inner_wires() const {
-    ERR_FAIL_COND_V_MSG(is_null(), Array(), "Face.get_inner_wires requires a non-null shape.");
+    if (is_null()) {
+        ERR_PRINT(vformat("Face.get_inner_wires failed: requires a non-null shape."));
+        return Array();
+    }
 
     try {
         const TopoDS_Face face = TopoDS::Face(get_occt_shape());
@@ -215,12 +292,16 @@ Array Face::get_inner_wires() const {
         }
         return inner_wires;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Face.get_inner_wires failed: %s", occt_utils::exception_to_string(failure)));
+        return Array();
     }
 }
 
 Vector3 Face::get_normal() const {
-    ERR_FAIL_COND_V_MSG(is_null(), Vector3(), "Face.get_normal requires a non-null shape.");
+    if (is_null()) {
+        ERR_PRINT(vformat("Face.get_normal failed: requires a non-null shape."));
+        return Vector3();
+    }
 
     try {
         const TopoDS_Face face = TopoDS::Face(get_occt_shape());
@@ -231,10 +312,16 @@ Vector3 Face::get_normal() const {
         BRepTools::UVBounds(face, umin, umax, vmin, vmax);
 
         const Handle(Geom_Surface) surface = BRep_Tool::Surface(face);
-        ERR_FAIL_COND_V_MSG(surface.IsNull(), Vector3(), "OpenCASCADE could not determine a supporting surface for the face.");
+        if (surface.IsNull()) {
+            ERR_PRINT(vformat("Face.get_normal failed: OpenCASCADE could not determine a supporting surface for the face."));
+            return Vector3();
+        }
 
         GeomLProp_SLProps properties(surface, (umin + umax) * 0.5, (vmin + vmax) * 0.5, 1, 1e-9);
-        ERR_FAIL_COND_V_MSG(!properties.IsNormalDefined(), Vector3(), "OpenCASCADE could not determine the face normal.");
+        if (!properties.IsNormalDefined()) {
+            ERR_PRINT(vformat("Face.get_normal failed: OpenCASCADE could not determine the face normal."));
+            return Vector3();
+        }
 
         gp_Dir normal = properties.Normal();
         if (face.Orientation() == TopAbs_REVERSED) {
@@ -246,6 +333,7 @@ Vector3 Face::get_normal() const {
             static_cast<real_t>(normal.Z())
         );
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Vector3(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Face.get_normal failed: %s", occt_utils::exception_to_string(failure)));
+        return Vector3();
     }
 }

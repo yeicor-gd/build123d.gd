@@ -3,6 +3,7 @@
 #include "OCCTUtils.h"
 
 #include <godot_cpp/core/error_macros.hpp>
+#include <godot_cpp/variant/string.hpp>
 
 #include <BRepPrimAPI_MakeSphere.hxx>
 
@@ -20,9 +21,12 @@ void SolidSphere::build_sphere(double p_radius, const Vector3 &p_center) {
     try {
         BRepPrimAPI_MakeSphere sphere(occt_utils::to_occt_point(p_center), p_radius);
         sphere.Build();
-        ERR_FAIL_COND_MSG(!sphere.IsDone(), "OpenCASCADE sphere construction did not complete.");
+        if (!sphere.IsDone()) {
+            ERR_PRINT("SolidSphere.build_sphere: sphere construction did not complete");
+            return;
+        }
         set_occt_shape(sphere.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("SolidSphere.build_sphere failed: %s", occt_utils::exception_to_string(failure)));
     }
 }

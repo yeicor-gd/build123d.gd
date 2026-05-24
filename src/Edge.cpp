@@ -57,56 +57,84 @@ void Edge::build_line(const Vector3 &p_start, const Vector3 &p_end) {
     try {
         BRepBuilderAPI_MakeEdge builder(occt_utils::to_occt_point(p_start), occt_utils::to_occt_point(p_end));
         builder.Build();
-        ERR_FAIL_COND_MSG(!builder.IsDone(), "OpenCASCADE edge construction did not complete.");
+        if (!builder.IsDone()) {
+            ERR_PRINT(vformat("Edge.build_line failed: OpenCASCADE edge construction did not complete."));
+            return;
+        }
         set_occt_shape(builder.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Edge.build_line failed: %s", occt_utils::exception_to_string(failure)));
     }
 }
 
 Vector3 Edge::get_start_position() const {
-    ERR_FAIL_COND_V_MSG(is_null(), Vector3(), "Edge.get_start_position requires a non-null shape.");
+    if (is_null()) {
+        ERR_PRINT(vformat("Edge.get_start_position failed: requires a non-null shape."));
+        return Vector3();
+    }
 
     try {
         const PackedVector3Array polyline = sample_edge_polyline(TopoDS::Edge(get_occt_shape()), 0.1);
-        ERR_FAIL_COND_V_MSG(polyline.is_empty(), Vector3(), "OpenCASCADE could not determine the edge start point.");
+        if (polyline.is_empty()) {
+            ERR_PRINT(vformat("Edge.get_start_position failed: OpenCASCADE could not determine the edge start point."));
+            return Vector3();
+        }
         return polyline[0];
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Vector3(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Edge.get_start_position failed: %s", occt_utils::exception_to_string(failure)));
+        return Vector3();
     }
 }
 
 Vector3 Edge::get_end_position() const {
-    ERR_FAIL_COND_V_MSG(is_null(), Vector3(), "Edge.get_end_position requires a non-null shape.");
+    if (is_null()) {
+        ERR_PRINT(vformat("Edge.get_end_position failed: requires a non-null shape."));
+        return Vector3();
+    }
 
     try {
         const PackedVector3Array polyline = sample_edge_polyline(TopoDS::Edge(get_occt_shape()), 0.1);
-        ERR_FAIL_COND_V_MSG(polyline.is_empty(), Vector3(), "OpenCASCADE could not determine the edge end point.");
+        if (polyline.is_empty()) {
+            ERR_PRINT(vformat("Edge.get_end_position failed: OpenCASCADE could not determine the edge end point."));
+            return Vector3();
+        }
         return polyline[polyline.size() - 1];
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Vector3(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Edge.get_end_position failed: %s", occt_utils::exception_to_string(failure)));
+        return Vector3();
     }
 }
 
 double Edge::get_length() const {
-    ERR_FAIL_COND_V_MSG(is_null(), 0.0, "Edge.get_length requires a non-null shape.");
+    if (is_null()) {
+        ERR_PRINT(vformat("Edge.get_length failed: requires a non-null shape."));
+        return 0.0;
+    }
 
     try {
         GProp_GProps properties;
         BRepGProp::LinearProperties(get_occt_shape(), properties);
         return properties.Mass();
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(0.0, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Edge.get_length failed: %s", occt_utils::exception_to_string(failure)));
+        return 0.0;
     }
 }
 
 PackedVector3Array Edge::get_polyline(double p_deflection) const {
-    ERR_FAIL_COND_V_MSG(is_null(), PackedVector3Array(), "Edge.get_polyline requires a non-null shape.");
-    ERR_FAIL_COND_V_MSG(p_deflection <= 0.0, PackedVector3Array(), "Edge.get_polyline requires a positive deflection.");
+    if (is_null()) {
+        ERR_PRINT(vformat("Edge.get_polyline failed: requires a non-null shape."));
+        return PackedVector3Array();
+    }
+    if (p_deflection <= 0.0) {
+        ERR_PRINT(vformat("Edge.get_polyline failed: requires a positive deflection."));
+        return PackedVector3Array();
+    }
 
     try {
         return sample_edge_polyline(TopoDS::Edge(get_occt_shape()), p_deflection);
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(PackedVector3Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Edge.get_polyline failed: %s", occt_utils::exception_to_string(failure)));
+        return PackedVector3Array();
     }
 }

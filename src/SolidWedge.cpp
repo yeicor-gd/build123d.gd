@@ -3,6 +3,7 @@
 #include "OCCTUtils.h"
 
 #include <godot_cpp/core/error_macros.hpp>
+#include <godot_cpp/variant/string.hpp>
 
 #include <BRepPrimAPI_MakeWedge.hxx>
 #include <gp_Ax2.hxx>
@@ -24,9 +25,12 @@ void SolidWedge::build_wedge(double p_dx, double p_dy, double p_dz, double p_ltx
         const gp_Ax2 axis(occt_utils::to_occt_point(p_origin), gp_Dir(0.0, 0.0, 1.0));
         BRepPrimAPI_MakeWedge wedge(axis, p_dx, p_dy, p_dz, p_ltx);
         wedge.Build();
-        ERR_FAIL_COND_MSG(!wedge.IsDone(), "OpenCASCADE wedge construction did not complete.");
+        if (!wedge.IsDone()) {
+            ERR_PRINT("SolidWedge.build_wedge: wedge construction did not complete");
+            return;
+        }
         set_occt_shape(wedge.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("SolidWedge.build_wedge failed: %s", occt_utils::exception_to_string(failure)));
     }
 }

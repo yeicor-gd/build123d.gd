@@ -28,10 +28,13 @@ void Vertex::build_vertex(const Vector3 &p_position) {
     try {
         BRepBuilderAPI_MakeVertex builder(occt_utils::to_occt_point(p_position));
         builder.Build();
-        ERR_FAIL_COND_MSG(!builder.IsDone(), "OpenCASCADE vertex construction did not complete.");
+        if (!builder.IsDone()) {
+            ERR_PRINT(vformat("Vertex.build_vertex failed: OpenCASCADE vertex construction did not complete."));
+            return;
+        }
         set_occt_shape(builder.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Vertex.build_vertex failed: %s", occt_utils::exception_to_string(failure)));
     }
 }
 
@@ -41,6 +44,7 @@ Vector3 Vertex::get_position() const {
     try {
         return occt_utils::to_godot_vector3(BRep_Tool::Pnt(TopoDS::Vertex(get_occt_shape())));
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Vector3(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Vertex.get_position failed: %s", occt_utils::exception_to_string(failure)));
+        return Vector3();
     }
 }

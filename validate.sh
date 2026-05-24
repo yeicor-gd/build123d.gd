@@ -87,7 +87,7 @@ fi
 
 if [ "$GODOT_VERSION" = "system" ]; then
     # Use system Godot, no sanitizers, no build
-    GODOT_BIN="godot"
+    GODOT_BIN="${GODOT_BIN:-godot}"
 else
     GODOT_BUILD_DIR="$SCRIPT_DIR/build"
     GODOT_SOURCE_DIR="$GODOT_BUILD_DIR/godot-$GODOT_VERSION"
@@ -149,34 +149,20 @@ trap "rm -f '$RUNTIME_LOG'" EXIT
 eval "$MY_LD_PRELOAD LSAN_OPTIONS=detect_leaks=0 $GODOT_BIN --import --path \"$SCRIPT_DIR/demo\" --headless --quit 2>&1 | tee -a \"$IMPORT_LOG\"; EXIT_CODE=\${PIPESTATUS[0]}; if [ \$EXIT_CODE -ne 0 ]; then exit \$EXIT_CODE; fi"
 eval "$MY_LD_PRELOAD $GODOT_BIN --path \"$SCRIPT_DIR/demo\" --headless 2>&1 | tee -a \"$RUNTIME_LOG\"; EXIT_CODE=\${PIPESTATUS[0]}; if [ \$EXIT_CODE -ne 0 ]; then exit \$EXIT_CODE; fi"
 
-_extract_runtime_errors() {
-    local log_file="$1"
-    grep -E -v "(ObjectDB|RID).*leaked|resources still in use at exit" "$log_file" | \
-    grep -E "^ERROR:|^SCRIPT ERROR:|^WARNING:|^handle_crash:|Shader compilation error|Script compilation error|Parse error|undefined method|undefined symbol|not found|No such|^TESTS FAILED" || return 0
+_extract_errors() {
+    echo "$1" | \
+    grep -E -v "(ObjectDB|RID).*leaked|resources still in use at exit" | \
+    grep -E "^ERROR:|^SCRIPT ERROR:|^WARNING:|^handle_crash:|Shader compilation error|Script compilation error|Parse error|undefined method|undefined symbol|not found|No such|^TESTS FAILED|^handle_crash:" || return 0
 }
 
-_extract_runtime_errors() {
-    local log_file="$1"
-    local ignore_editor_crash="$2"
-
-    local base_filter="grep -E -v '^ERROR:|^SCRIPT ERROR:|^WARNING:|Shader compilation error|Script compilation error|Parse error|undefined method|undefined symbol|not found|No such|^TESTS FAILED|(ObjectDB|RID).*leaked|resources still in use at exit'"
-
-    if [ "$ignore_editor_crash" = "true" ]; then
-        eval "$base_filter" "\"$log_file\"" || return 0
-    else
-        eval "$base_filter" "\"$log_file\"" | grep -E "^handle_crash:" || return 0
-    fi
-}
-
-IMPORT_ERRORS=$(_extract_runtime_errors "$IMPORT_LOG" true 2>/dev/null || true)
-RUN_ERRORS=$(_extract_runtime_errors "$RUNTIME_LOG" false 2>/dev/null || true)
-
-ERRORS="${IMPORT_ERRORS}"$'\n'"${RUN_ERRORS}"
-ERRORS=$(echo "$ERRORS" | sed '/^$/d')
+ERRORS=$(_extract_errors "$IMPORT_LOG"$'\n'"$RUNTIME_LOG")
 
 if [ -n "$ERRORS" ]; then
+    echo "✗ Runtime validation failed - errors detected"
     if [ -n "$ERROR_FILE" ]; then
         echo "$ERRORS" > "$ERROR_FILE"
+    else
+        echo "$ERRORS"
     fi
     exit 1
 fi

@@ -86,10 +86,13 @@ void Wire::build_polygon(const PackedVector3Array &p_points, bool p_closed) {
             builder.Close();
         }
         builder.Build();
-        ERR_FAIL_COND_MSG(!builder.IsDone(), "OpenCASCADE wire construction did not complete.");
+        if (!builder.IsDone()) {
+            ERR_PRINT(vformat("Wire.build_polygon failed: OpenCASCADE wire construction did not complete."));
+            return;
+        }
         set_occt_shape(builder.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Wire.build_polygon failed: %s", occt_utils::exception_to_string(failure)));
     }
 }
 
@@ -106,12 +109,19 @@ Ref<TopoShape> Wire::lofted_to(const Ref<Wire> &p_other, bool p_make_solid, bool
         builder.AddWire(TopoDS::Wire(get_occt_shape()));
         builder.AddWire(TopoDS::Wire(p_other->get_occt_shape()));
         builder.Build();
-        ERR_FAIL_COND_V_MSG(!builder.IsDone(), Ref<TopoShape>(), "OpenCASCADE loft operation did not complete.");
+        if (!builder.IsDone()) {
+            ERR_PRINT(vformat("Wire.lofted_to failed: OpenCASCADE loft operation did not complete."));
+            return Ref<TopoShape>();
+        }
         const TopoDS_Shape result = builder.Shape();
-        ERR_FAIL_COND_V_MSG(result.IsNull(), Ref<TopoShape>(), "OpenCASCADE loft operation returned a null shape.");
+        if (result.IsNull()) {
+            ERR_PRINT(vformat("Wire.lofted_to failed: OpenCASCADE loft operation returned a null shape."));
+            return Ref<TopoShape>();
+        }
         return TopoShape::from_occt(result);
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Wire.lofted_to failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -127,12 +137,19 @@ Ref<TopoShape> Wire::swept_along(const Ref<Wire> &p_spine) const {
 
         BRepOffsetAPI_MakePipe builder(TopoDS::Wire(p_spine->get_occt_shape()), profile->get_occt_shape());
         builder.Build();
-        ERR_FAIL_COND_V_MSG(!builder.IsDone(), Ref<TopoShape>(), "OpenCASCADE sweep operation did not complete.");
+        if (!builder.IsDone()) {
+            ERR_PRINT(vformat("Wire.swept_along failed: OpenCASCADE sweep operation did not complete."));
+            return Ref<TopoShape>();
+        }
         const TopoDS_Shape result = builder.Shape();
-        ERR_FAIL_COND_V_MSG(result.IsNull(), Ref<TopoShape>(), "OpenCASCADE sweep operation returned a null shape.");
+        if (result.IsNull()) {
+            ERR_PRINT(vformat("Wire.swept_along failed: OpenCASCADE sweep operation returned a null shape."));
+            return Ref<TopoShape>();
+        }
         return TopoShape::from_occt(result);
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Wire.swept_along failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -161,7 +178,10 @@ Ref<Wire> Wire::offset_2d(double p_distance) const {
                 wire_builder.Add(first_half);
                 wire_builder.Add(second_half);
                 wire_builder.Build();
-                ERR_FAIL_COND_V_MSG(!wire_builder.IsDone(), Ref<Wire>(), "OpenCASCADE single-edge wire preparation for offset did not complete.");
+                if (!wire_builder.IsDone()) {
+                    ERR_PRINT(vformat("Wire.offset_2d failed: OpenCASCADE single-edge wire preparation for offset did not complete."));
+                    return Ref<Wire>();
+                }
                 source_wire = wire_builder.Wire();
             }
         }
@@ -172,7 +192,10 @@ Ref<Wire> Wire::offset_2d(double p_distance) const {
         builder.Perform(p_distance);
 
         TopoDS_Shape result = builder.Shape();
-        ERR_FAIL_COND_V_MSG(result.IsNull(), Ref<Wire>(), "OpenCASCADE 2D offset returned a null shape.");
+        if (result.IsNull()) {
+            ERR_PRINT(vformat("Wire.offset_2d failed: OpenCASCADE 2D offset returned a null shape."));
+            return Ref<Wire>();
+        }
 
         if (result.ShapeType() == TopAbs_COMPOUND) {
             TopoDS_Shape first_wire;
@@ -190,14 +213,21 @@ Ref<Wire> Wire::offset_2d(double p_distance) const {
             if (wire_count == 0 || first_wire.IsNull()) {
                 return Ref<Wire>();
             }
-            ERR_FAIL_COND_V_MSG(wire_count != 1, Ref<Wire>(), "Wire.offset_2d expected a single wire result.");
+            if (wire_count != 1) {
+                ERR_PRINT(vformat("Wire.offset_2d failed: expected a single wire result, got %d", wire_count));
+                return Ref<Wire>();
+            }
             result = first_wire;
         }
 
-        ERR_FAIL_COND_V_MSG(result.ShapeType() != TopAbs_WIRE, Ref<Wire>(), "Wire.offset_2d expected a wire result.");
+        if (result.ShapeType() != TopAbs_WIRE) {
+            ERR_PRINT(vformat("Wire.offset_2d failed: expected a wire result, got %d", static_cast<int>(result.ShapeType())));
+            return Ref<Wire>();
+        }
         return Wire::from_occt(TopoDS::Wire(result));
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<Wire>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Wire.offset_2d failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<Wire>();
     }
 }
 
@@ -227,7 +257,8 @@ bool Wire::is_closed() const {
     try {
         return BRep_Tool::IsClosed(get_occt_shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Wire.is_closed failed: %s", occt_utils::exception_to_string(failure)));
+        return false;
     }
 }
 
@@ -239,7 +270,8 @@ double Wire::get_length() const {
         BRepGProp::LinearProperties(get_occt_shape(), properties);
         return properties.Mass();
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(0.0, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Wire.get_length failed: %s", occt_utils::exception_to_string(failure)));
+        return 0.0;
     }
 }
 
@@ -254,7 +286,8 @@ Array Wire::get_edges() const {
         }
         return edges;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Wire.get_edges failed: %s", occt_utils::exception_to_string(failure)));
+        return Array();
     }
 }
 
@@ -277,6 +310,7 @@ PackedVector3Array Wire::get_polyline(double p_deflection) const {
         }
         return polyline;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(PackedVector3Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Wire.get_polyline failed: %s", occt_utils::exception_to_string(failure)));
+        return PackedVector3Array();
     }
 }

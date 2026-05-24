@@ -29,21 +29,40 @@ Vector3 plane_point(const Ref<CadPlane> &p_plane, double p_u, double p_v) {
 }
 
 TopoDS_Edge make_line_edge(const Vector3 &p_start, const Vector3 &p_end) {
-    BRepBuilderAPI_MakeEdge builder(occt_utils::to_occt_point(p_start), occt_utils::to_occt_point(p_end));
-    ERR_FAIL_COND_V_MSG(!builder.IsDone(), TopoDS_Edge(), "OpenCASCADE rounded rectangle line-edge construction did not complete.");
-    return builder.Edge();
+    try {
+        BRepBuilderAPI_MakeEdge builder(occt_utils::to_occt_point(p_start), occt_utils::to_occt_point(p_end));
+        if (!builder.IsDone()) {
+            ERR_PRINT(vformat("RectangleRoundedWire: line-edge construction did not complete"));
+            return TopoDS_Edge();
+        }
+        return builder.Edge();
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("RectangleRoundedWire: line-edge construction failed: %s", occt_utils::exception_to_string(e)));
+        return TopoDS_Edge();
+    }
 }
 
 TopoDS_Edge make_arc_edge(const Vector3 &p_start, const Vector3 &p_mid, const Vector3 &p_end) {
-    GC_MakeArcOfCircle builder(
-        occt_utils::to_occt_point(p_start),
-        occt_utils::to_occt_point(p_mid),
-        occt_utils::to_occt_point(p_end));
-    ERR_FAIL_COND_V_MSG(!builder.IsDone(), TopoDS_Edge(), "OpenCASCADE rounded rectangle arc construction did not complete.");
+    try {
+        GC_MakeArcOfCircle builder(
+            occt_utils::to_occt_point(p_start),
+            occt_utils::to_occt_point(p_mid),
+            occt_utils::to_occt_point(p_end));
+        if (!builder.IsDone()) {
+            ERR_PRINT(vformat("RectangleRoundedWire: arc construction did not complete"));
+            return TopoDS_Edge();
+        }
 
-    BRepBuilderAPI_MakeEdge edge_builder(builder.Value());
-    ERR_FAIL_COND_V_MSG(!edge_builder.IsDone(), TopoDS_Edge(), "OpenCASCADE rounded rectangle arc-edge construction did not complete.");
-    return edge_builder.Edge();
+        BRepBuilderAPI_MakeEdge edge_builder(builder.Value());
+        if (!edge_builder.IsDone()) {
+            ERR_PRINT(vformat("RectangleRoundedWire: arc-edge construction did not complete"));
+            return TopoDS_Edge();
+        }
+        return edge_builder.Edge();
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("RectangleRoundedWire: arc construction failed: %s", occt_utils::exception_to_string(e)));
+        return TopoDS_Edge();
+    }
 }
 
 } // namespace
@@ -97,9 +116,12 @@ void RectangleRoundedWire::build_rounded_rectangle(const Vector2 &p_size, double
         wire_builder.Add(make_line_edge(left_top, left_bottom));
         wire_builder.Add(make_arc_edge(left_bottom, bottom_left_mid, bottom_left));
         wire_builder.Build();
-        ERR_FAIL_COND_MSG(!wire_builder.IsDone(), "OpenCASCADE rounded rectangle wire construction did not complete.");
+        if (!wire_builder.IsDone()) {
+            ERR_PRINT(vformat("RectangleRoundedWire.build_rounded_rectangle: wire construction did not complete"));
+            return;
+        }
         set_occt_shape(wire_builder.Wire());
-    } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("RectangleRoundedWire.build_rounded_rectangle failed: %s", occt_utils::exception_to_string(e)));
     }
 }

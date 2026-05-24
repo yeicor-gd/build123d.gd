@@ -46,26 +46,51 @@ double GeometryVector::length() const {
 
 double GeometryVector::dot(const Ref<GeometryVector> &p_other) const {
     ERR_FAIL_COND_V_MSG(p_other.is_null(), 0.0, "GeometryVector.dot requires a non-null other vector.");
-    return occt_vector.Dot(p_other->occt_vector);
+    try {
+        return occt_vector.Dot(p_other->occt_vector);
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("GeometryVector.dot failed: %s", occt_utils::exception_to_string(e)));
+        return 0.0;
+    }
 }
 
 Ref<GeometryVector> GeometryVector::add(const Ref<GeometryVector> &p_other) const {
     ERR_FAIL_COND_V_MSG(p_other.is_null(), Ref<GeometryVector>(), "GeometryVector.add requires a non-null other vector.");
-    return from_occt(occt_vector.Added(p_other->occt_vector));
+    try {
+        return from_occt(occt_vector.Added(p_other->occt_vector));
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("GeometryVector.add failed: %s", occt_utils::exception_to_string(e)));
+        return Ref<GeometryVector>();
+    }
 }
 
 Ref<GeometryVector> GeometryVector::subtract(const Ref<GeometryVector> &p_other) const {
     ERR_FAIL_COND_V_MSG(p_other.is_null(), Ref<GeometryVector>(), "GeometryVector.subtract requires a non-null other vector.");
-    return from_occt(occt_vector.Subtracted(p_other->occt_vector));
+    try {
+        return from_occt(occt_vector.Subtracted(p_other->occt_vector));
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("GeometryVector.subtract failed: %s", occt_utils::exception_to_string(e)));
+        return Ref<GeometryVector>();
+    }
 }
 
 Ref<GeometryVector> GeometryVector::cross(const Ref<GeometryVector> &p_other) const {
     ERR_FAIL_COND_V_MSG(p_other.is_null(), Ref<GeometryVector>(), "GeometryVector.cross requires a non-null other vector.");
-    return from_occt(occt_vector.Crossed(p_other->occt_vector));
+    try {
+        return from_occt(occt_vector.Crossed(p_other->occt_vector));
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("GeometryVector.cross failed: %s", occt_utils::exception_to_string(e)));
+        return Ref<GeometryVector>();
+    }
 }
 
 Ref<GeometryVector> GeometryVector::scaled(double p_factor) const {
-    return from_occt(occt_vector.Multiplied(p_factor));
+    try {
+        return from_occt(occt_vector.Multiplied(p_factor));
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("GeometryVector.scaled failed: %s", occt_utils::exception_to_string(e)));
+        return Ref<GeometryVector>();
+    }
 }
 
 const gp_Vec &GeometryVector::get_occt_vector() const {

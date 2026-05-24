@@ -3,6 +3,7 @@
 #include "OCCTUtils.h"
 
 #include <godot_cpp/core/error_macros.hpp>
+#include <godot_cpp/variant/string.hpp>
 
 #include <BRepPrimAPI_MakeCone.hxx>
 #include <gp_Ax2.hxx>
@@ -25,9 +26,12 @@ void SolidCone::build_cone(double p_radius_bottom, double p_radius_top, double p
         const gp_Ax2 axis(occt_utils::to_occt_point(p_origin), gp_Dir(0.0, 0.0, 1.0));
         BRepPrimAPI_MakeCone cone(axis, p_radius_bottom, p_radius_top, p_height);
         cone.Build();
-        ERR_FAIL_COND_MSG(!cone.IsDone(), "OpenCASCADE cone construction did not complete.");
+        if (!cone.IsDone()) {
+            ERR_PRINT("SolidCone.build_cone: cone construction did not complete");
+            return;
+        }
         set_occt_shape(cone.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("SolidCone.build_cone failed: %s", occt_utils::exception_to_string(failure)));
     }
 }

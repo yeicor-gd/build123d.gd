@@ -276,7 +276,8 @@ Ref<TopoShape> TopoShape::copy() const {
         BRepBuilderAPI_Copy copier(occt_shape, Standard_True, Standard_False);
         return from_occt(copier.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.copy failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -287,7 +288,8 @@ Ref<TopoShape> TopoShape::fuse(const Ref<TopoShape> &p_other) const {
     try {
         return do_boolean_operation<BRepAlgoAPI_Fuse>(occt_shape, p_other->occt_shape);
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.fuse failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -298,7 +300,8 @@ Ref<TopoShape> TopoShape::cut(const Ref<TopoShape> &p_other) const {
     try {
         return do_boolean_operation<BRepAlgoAPI_Cut>(occt_shape, p_other->occt_shape);
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.cut failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -309,7 +312,8 @@ Ref<TopoShape> TopoShape::common(const Ref<TopoShape> &p_other) const {
     try {
         return do_boolean_operation<BRepAlgoAPI_Common>(occt_shape, p_other->occt_shape);
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.common failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -321,7 +325,8 @@ Ref<TopoShape> TopoShape::fuse_all(const Array &p_shapes) const {
         ERR_FAIL_COND_V_MSG(result.is_null(), Ref<TopoShape>(), "TopoShape.fuse_all could not copy the source shape.");
         return do_boolean_sequence<BRepAlgoAPI_Fuse>(result, p_shapes, "TopoShape.fuse_all requires every shape entry to be a non-null TopoShape.");
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.fuse_all failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -333,7 +338,8 @@ Ref<TopoShape> TopoShape::cut_all(const Array &p_shapes) const {
         ERR_FAIL_COND_V_MSG(result.is_null(), Ref<TopoShape>(), "TopoShape.cut_all could not copy the source shape.");
         return do_boolean_sequence<BRepAlgoAPI_Cut>(result, p_shapes, "TopoShape.cut_all requires every shape entry to be a non-null TopoShape.");
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.cut_all failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -345,7 +351,8 @@ Ref<TopoShape> TopoShape::common_all(const Array &p_shapes) const {
         ERR_FAIL_COND_V_MSG(result.is_null(), Ref<TopoShape>(), "TopoShape.common_all could not copy the source shape.");
         return do_boolean_sequence<BRepAlgoAPI_Common>(result, p_shapes, "TopoShape.common_all requires every shape entry to be a non-null TopoShape.");
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.common_all failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -358,7 +365,8 @@ Ref<TopoShape> TopoShape::translated(const Vector3 &p_offset) const {
         BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
         return from_occt(transformer.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.translated failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -382,7 +390,8 @@ Ref<TopoShape> TopoShape::rotated(const Vector3 &p_axis_origin, const Vector3 &p
         BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
         return from_occt(transformer.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.rotated failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -396,7 +405,8 @@ Ref<TopoShape> TopoShape::scaled(const Vector3 &p_center, double p_factor) const
         BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
         return from_occt(transformer.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.scaled failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -409,7 +419,8 @@ Ref<TopoShape> TopoShape::mirrored_about_point(const Vector3 &p_center) const {
         BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
         return from_occt(transformer.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.mirrored_about_point failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -423,7 +434,8 @@ Ref<TopoShape> TopoShape::mirrored_about_axis(const Ref<Axis> &p_axis) const {
         BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
         return from_occt(transformer.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.mirrored_about_axis failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -437,7 +449,8 @@ Ref<TopoShape> TopoShape::mirrored_about_plane(const Ref<CadPlane> &p_plane) con
         BRepBuilderAPI_Transform transformer(occt_shape, transform, Standard_True, Standard_True);
         return from_occt(transformer.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.mirrored_about_plane failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -449,7 +462,8 @@ Ref<TopoShape> TopoShape::located(const Ref<Location> &p_location) const {
         BRepBuilderAPI_Transform transformer(occt_shape, p_location->get_occt_transform(), Standard_True, Standard_True);
         return from_occt(transformer.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<TopoShape>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.located failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<TopoShape>();
     }
 }
 
@@ -461,7 +475,8 @@ double TopoShape::get_volume() const {
         BRepGProp::VolumeProperties(occt_shape, properties);
         return properties.Mass();
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(0.0, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_volume failed: %s", occt_utils::exception_to_string(failure)));
+        return 0.0;
     }
 }
 
@@ -473,7 +488,8 @@ double TopoShape::get_surface_area() const {
         BRepGProp::SurfaceProperties(occt_shape, properties);
         return properties.Mass();
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(0.0, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_surface_area failed: %s", occt_utils::exception_to_string(failure)));
+        return 0.0;
     }
 }
 
@@ -546,7 +562,8 @@ String TopoShape::get_geom_type_name() const {
                 return "OTHER";
         }
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(String(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_geom_type_name failed: %s", occt_utils::exception_to_string(failure)));
+        return String();
     }
 }
 
@@ -558,7 +575,8 @@ Vector3 TopoShape::get_center_of_mass() const {
         BRepGProp::VolumeProperties(occt_shape, properties);
         return occt_utils::to_godot_vector3(properties.CentreOfMass());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Vector3(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_center_of_mass failed: %s", occt_utils::exception_to_string(failure)));
+        return Vector3();
     }
 }
 
@@ -568,7 +586,10 @@ Vector3 TopoShape::get_bounding_box_min() const {
     try {
         Bnd_Box bounds;
         BRepBndLib::Add(occt_shape, bounds, Standard_False);
-        ERR_FAIL_COND_V_MSG(bounds.IsVoid(), Vector3(), "Could not compute a bounding box for the shape.");
+        if (bounds.IsVoid()) {
+            ERR_PRINT(vformat("TopoShape.get_bounding_box_min failed: could not compute a bounding box for the shape."));
+            return Vector3();
+        }
 
         double xmin = 0.0;
         double ymin = 0.0;
@@ -579,7 +600,8 @@ Vector3 TopoShape::get_bounding_box_min() const {
         bounds.Get(xmin, ymin, zmin, xmax, ymax, zmax);
         return Vector3(static_cast<real_t>(xmin), static_cast<real_t>(ymin), static_cast<real_t>(zmin));
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Vector3(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_bounding_box_min failed: %s", occt_utils::exception_to_string(failure)));
+        return Vector3();
     }
 }
 
@@ -589,7 +611,10 @@ Vector3 TopoShape::get_bounding_box_max() const {
     try {
         Bnd_Box bounds;
         BRepBndLib::Add(occt_shape, bounds, Standard_False);
-        ERR_FAIL_COND_V_MSG(bounds.IsVoid(), Vector3(), "Could not compute a bounding box for the shape.");
+        if (bounds.IsVoid()) {
+            ERR_PRINT(vformat("TopoShape.get_bounding_box_max failed: could not compute a bounding box for the shape."));
+            return Vector3();
+        }
 
         double xmin = 0.0;
         double ymin = 0.0;
@@ -600,7 +625,8 @@ Vector3 TopoShape::get_bounding_box_max() const {
         bounds.Get(xmin, ymin, zmin, xmax, ymax, zmax);
         return Vector3(static_cast<real_t>(xmax), static_cast<real_t>(ymax), static_cast<real_t>(zmax));
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Vector3(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_bounding_box_max failed: %s", occt_utils::exception_to_string(failure)));
+        return Vector3();
     }
 }
 
@@ -620,7 +646,8 @@ Array TopoShape::get_vertices() const {
         }
         return vertices;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_vertices failed: %s", occt_utils::exception_to_string(failure)));
+        return Array();
     }
 }
 
@@ -636,7 +663,8 @@ Array TopoShape::get_edges() const {
         }
         return edges;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_edges failed: %s", occt_utils::exception_to_string(failure)));
+        return Array();
     }
 }
 
@@ -652,7 +680,8 @@ Array TopoShape::get_wires() const {
         }
         return wires;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_wires failed: %s", occt_utils::exception_to_string(failure)));
+        return Array();
     }
 }
 
@@ -668,7 +697,8 @@ Array TopoShape::get_faces() const {
         }
         return faces;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_faces failed: %s", occt_utils::exception_to_string(failure)));
+        return Array();
     }
 }
 
@@ -684,7 +714,8 @@ Array TopoShape::get_shells() const {
         }
         return shells;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_shells failed: %s", occt_utils::exception_to_string(failure)));
+        return Array();
     }
 }
 
@@ -700,7 +731,8 @@ Array TopoShape::get_compounds() const {
         }
         return compounds;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_compounds failed: %s", occt_utils::exception_to_string(failure)));
+        return Array();
     }
 }
 
@@ -716,7 +748,8 @@ Array TopoShape::get_solids() const {
         }
         return solids;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_solids failed: %s", occt_utils::exception_to_string(failure)));
+        return Array();
     }
 }
 
@@ -732,7 +765,8 @@ PackedVector3Array TopoShape::get_vertex_positions() const {
         }
         return vertices;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(PackedVector3Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_vertex_positions failed: %s", occt_utils::exception_to_string(failure)));
+        return PackedVector3Array();
     }
 }
 
@@ -749,7 +783,8 @@ Array TopoShape::get_edge_polylines(double p_deflection) const {
         }
         return polylines;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Array(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.get_edge_polylines failed: %s", occt_utils::exception_to_string(failure)));
+        return Array();
     }
 }
 
@@ -767,7 +802,8 @@ bool TopoShape::import_step_file(const String &p_file_path) {
         set_occt_shape(shape);
         return !occt_shape.IsNull();
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.import_step_file failed: %s", occt_utils::exception_to_string(failure)));
+        return false;
     }
 }
 
@@ -785,7 +821,8 @@ bool TopoShape::export_step_file(const String &p_file_path) const {
         }
         return stream.good();
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.export_step_file failed: %s", occt_utils::exception_to_string(failure)));
+        return false;
     }
 }
 
@@ -799,7 +836,8 @@ bool TopoShape::import_step_bytes(const PackedByteArray &p_data) {
         set_occt_shape(shape);
         return true;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.import_step_bytes failed: %s", occt_utils::exception_to_string(failure)));
+        return false;
     }
 }
 
@@ -813,7 +851,8 @@ PackedByteArray TopoShape::export_step_bytes() const {
         }
         return to_packed_byte_array(stream.str());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(PackedByteArray(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.export_step_bytes failed: %s", occt_utils::exception_to_string(failure)));
+        return PackedByteArray();
     }
 }
 
@@ -828,7 +867,8 @@ bool TopoShape::import_stl_file(const String &p_file_path) {
         set_occt_shape(shape);
         return !occt_shape.IsNull();
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.import_stl_file failed: %s", occt_utils::exception_to_string(failure)));
+        return false;
     }
 }
 
@@ -844,7 +884,8 @@ bool TopoShape::export_stl_file(const String &p_file_path, bool p_ascii) const {
         const std::string path = to_std_string(globalize_path(p_file_path));
         return writer.Write(occt_shape, path.c_str());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.export_stl_file failed: %s", occt_utils::exception_to_string(failure)));
+        return false;
     }
 }
 
@@ -865,7 +906,8 @@ bool TopoShape::import_stl_bytes(const PackedByteArray &p_data) {
         }
         return success;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(false, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.import_stl_bytes failed: %s", occt_utils::exception_to_string(failure)));
+        return false;
     }
 }
 
@@ -889,7 +931,8 @@ PackedByteArray TopoShape::export_stl_bytes(bool p_ascii) const {
         }
         return to_packed_byte_array(data);
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(PackedByteArray(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.export_stl_bytes failed: %s", occt_utils::exception_to_string(failure)));
+        return PackedByteArray();
     }
 }
 
@@ -981,7 +1024,8 @@ Ref<ArrayMesh> TopoShape::to_array_mesh(double p_linear_deflection, double p_ang
         mesh->add_surface_from_arrays(Mesh::PRIMITIVE_TRIANGLES, arrays);
         return mesh;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<ArrayMesh>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("TopoShape.to_array_mesh failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<ArrayMesh>();
     }
 }
 

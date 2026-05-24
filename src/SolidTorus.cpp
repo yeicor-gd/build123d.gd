@@ -3,6 +3,7 @@
 #include "OCCTUtils.h"
 
 #include <godot_cpp/core/error_macros.hpp>
+#include <godot_cpp/variant/string.hpp>
 
 #include <BRepPrimAPI_MakeTorus.hxx>
 #include <gp_Ax2.hxx>
@@ -24,9 +25,12 @@ void SolidTorus::build_torus(double p_major_radius, double p_minor_radius, const
         const gp_Ax2 axis(occt_utils::to_occt_point(p_center), gp_Dir(0.0, 0.0, 1.0));
         BRepPrimAPI_MakeTorus torus(axis, p_major_radius, p_minor_radius);
         torus.Build();
-        ERR_FAIL_COND_MSG(!torus.IsDone(), "OpenCASCADE torus construction did not complete.");
+        if (!torus.IsDone()) {
+            ERR_PRINT("SolidTorus.build_torus: torus construction did not complete");
+            return;
+        }
         set_occt_shape(torus.Shape());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("SolidTorus.build_torus failed: %s", occt_utils::exception_to_string(failure)));
     }
 }

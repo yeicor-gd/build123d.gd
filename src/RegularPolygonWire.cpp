@@ -26,8 +26,8 @@ void RegularPolygonWire::_bind_methods() {
 RegularPolygonWire::RegularPolygonWire() = default;
 
 void RegularPolygonWire::build_regular_polygon(double p_radius, int p_side_count, const Ref<CadPlane> &p_plane, double p_start_angle_radians) {
-    ERR_FAIL_COND_MSG(p_radius <= 0.0, "RegularPolygonWire.build_regular_polygon requires a positive radius.");
-    ERR_FAIL_COND_MSG(p_side_count < 3, "RegularPolygonWire.build_regular_polygon requires at least 3 sides.");
+    ERR_FAIL_COND_MSG(p_radius <= 0.0, vformat("RegularPolygonWire.build_regular_polygon: requires a positive radius, got %f", p_radius));
+    ERR_FAIL_COND_MSG(p_side_count < 3, vformat("RegularPolygonWire.build_regular_polygon: requires at least 3 sides, got %d", p_side_count));
 
     Ref<CadPlane> plane = p_plane;
     if (plane.is_null()) {

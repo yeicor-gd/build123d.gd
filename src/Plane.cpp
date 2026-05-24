@@ -46,7 +46,7 @@ void CadPlane::set_plane(const godot::Vector3 &p_origin, const godot::Vector3 &p
             occt_plane = gp_Pln(origin, normal);
         }
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("CadPlane.set_plane failed: %s", occt_utils::exception_to_string(failure)));
     }
 }
 
@@ -80,7 +80,8 @@ godot::Vector3 CadPlane::project_point(const godot::Vector3 &p_point) const {
         const gp_Vec correction(gp_Vec(occt_plane.Axis().Direction()) * (-signed_distance));
         return occt_utils::to_godot_vector3(point.Translated(correction));
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(godot::Vector3(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("CadPlane.project_point failed: %s", occt_utils::exception_to_string(failure)));
+        return godot::Vector3();
     }
 }
 
@@ -91,7 +92,8 @@ godot::Ref<CadPlane> CadPlane::offsetted(double p_distance) const {
         result->set_occt_plane(occt_plane.Translated(gp_Vec(occt_plane.Axis().Direction()) * p_distance));
         return result;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(godot::Ref<CadPlane>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("CadPlane.offsetted failed: %s", occt_utils::exception_to_string(failure)));
+        return godot::Ref<CadPlane>();
     }
 }
 
@@ -106,7 +108,8 @@ godot::Ref<CadPlane> CadPlane::transformed(const godot::Ref<Location> &p_locatio
         result->set_occt_plane(transformed);
         return result;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(godot::Ref<CadPlane>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("CadPlane.transformed failed: %s", occt_utils::exception_to_string(failure)));
+        return godot::Ref<CadPlane>();
     }
 }
 

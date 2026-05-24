@@ -1,6 +1,7 @@
 #include "ShapeList.h"
 
 #include "Axis.h"
+#include "OCCTUtils.h"
 #include "Plane.h"
 #include "TopoShape.h"
 
@@ -449,187 +450,256 @@ Ref<TopoShape> ShapeList::last() const {
 }
 
 Vector3 ShapeList::center() const {
-    ERR_FAIL_COND_V_MSG(shapes.is_empty(), Vector3(), "ShapeList.center requires at least one shape.");
+    try {
+        ERR_FAIL_COND_V_MSG(shapes.is_empty(), Vector3(), "ShapeList.center requires at least one shape.");
 
-    Vector3 total_center;
-    int64_t count = 0;
-    for (int64_t index = 0; index < shapes.size(); ++index) {
-        const Ref<TopoShape> shape = shapes[index];
-        if (shape.is_null() || shape->is_null()) {
-            continue;
+        Vector3 total_center;
+        int64_t count = 0;
+        for (int64_t index = 0; index < shapes.size(); ++index) {
+            const Ref<TopoShape> shape = shapes[index];
+            if (shape.is_null() || shape->is_null()) {
+                continue;
+            }
+            total_center += shape_center(shape);
+            ++count;
         }
-        total_center += shape_center(shape);
-        ++count;
-    }
 
-    ERR_FAIL_COND_V_MSG(count == 0, Vector3(), "ShapeList.center requires at least one non-null shape.");
-    return total_center / static_cast<real_t>(count);
+        ERR_FAIL_COND_V_MSG(count == 0, Vector3(), "ShapeList.center requires at least one non-null shape.");
+        return total_center / static_cast<real_t>(count);
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("ShapeList.center failed: %s", occt_utils::exception_to_string(e)));
+        return Vector3();
+    }
 }
 
 Vector3 ShapeList::get_bounding_box_min() const {
-    ERR_FAIL_COND_V_MSG(shapes.is_empty(), Vector3(), "ShapeList.get_bounding_box_min requires at least one shape.");
+    try {
+        ERR_FAIL_COND_V_MSG(shapes.is_empty(), Vector3(), "ShapeList.get_bounding_box_min requires at least one shape.");
 
-    bool initialized = false;
-    Vector3 minimum;
-    for (int64_t index = 0; index < shapes.size(); ++index) {
-        const Ref<TopoShape> shape = shapes[index];
-        if (shape.is_null() || shape->is_null()) {
-            continue;
+        bool initialized = false;
+        Vector3 minimum;
+        for (int64_t index = 0; index < shapes.size(); ++index) {
+            const Ref<TopoShape> shape = shapes[index];
+            if (shape.is_null() || shape->is_null()) {
+                continue;
+            }
+            const Vector3 shape_min = shape->get_bounding_box_min();
+            if (!initialized) {
+                minimum = shape_min;
+                initialized = true;
+                continue;
+            }
+            minimum.x = std::min(minimum.x, shape_min.x);
+            minimum.y = std::min(minimum.y, shape_min.y);
+            minimum.z = std::min(minimum.z, shape_min.z);
         }
-        const Vector3 shape_min = shape->get_bounding_box_min();
-        if (!initialized) {
-            minimum = shape_min;
-            initialized = true;
-            continue;
-        }
-        minimum.x = std::min(minimum.x, shape_min.x);
-        minimum.y = std::min(minimum.y, shape_min.y);
-        minimum.z = std::min(minimum.z, shape_min.z);
+
+        ERR_FAIL_COND_V_MSG(!initialized, Vector3(), "ShapeList.get_bounding_box_min requires at least one non-null shape.");
+        return minimum;
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("ShapeList.get_bounding_box_min failed: %s", occt_utils::exception_to_string(e)));
+        return Vector3();
     }
-
-    ERR_FAIL_COND_V_MSG(!initialized, Vector3(), "ShapeList.get_bounding_box_min requires at least one non-null shape.");
-    return minimum;
 }
 
 Vector3 ShapeList::get_bounding_box_max() const {
-    ERR_FAIL_COND_V_MSG(shapes.is_empty(), Vector3(), "ShapeList.get_bounding_box_max requires at least one shape.");
+    try {
+        ERR_FAIL_COND_V_MSG(shapes.is_empty(), Vector3(), "ShapeList.get_bounding_box_max requires at least one shape.");
 
-    bool initialized = false;
-    Vector3 maximum;
-    for (int64_t index = 0; index < shapes.size(); ++index) {
-        const Ref<TopoShape> shape = shapes[index];
-        if (shape.is_null() || shape->is_null()) {
-            continue;
+        bool initialized = false;
+        Vector3 maximum;
+        for (int64_t index = 0; index < shapes.size(); ++index) {
+            const Ref<TopoShape> shape = shapes[index];
+            if (shape.is_null() || shape->is_null()) {
+                continue;
+            }
+            const Vector3 shape_max = shape->get_bounding_box_max();
+            if (!initialized) {
+                maximum = shape_max;
+                initialized = true;
+                continue;
+            }
+            maximum.x = std::max(maximum.x, shape_max.x);
+            maximum.y = std::max(maximum.y, shape_max.y);
+            maximum.z = std::max(maximum.z, shape_max.z);
         }
-        const Vector3 shape_max = shape->get_bounding_box_max();
-        if (!initialized) {
-            maximum = shape_max;
-            initialized = true;
-            continue;
-        }
-        maximum.x = std::max(maximum.x, shape_max.x);
-        maximum.y = std::max(maximum.y, shape_max.y);
-        maximum.z = std::max(maximum.z, shape_max.z);
+
+        ERR_FAIL_COND_V_MSG(!initialized, Vector3(), "ShapeList.get_bounding_box_max requires at least one non-null shape.");
+        return maximum;
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("ShapeList.get_bounding_box_max failed: %s", occt_utils::exception_to_string(e)));
+        return Vector3();
     }
-
-    ERR_FAIL_COND_V_MSG(!initialized, Vector3(), "ShapeList.get_bounding_box_max requires at least one non-null shape.");
-    return maximum;
 }
 
 Vector3 ShapeList::get_bounding_box_size() const {
-    return get_bounding_box_max() - get_bounding_box_min();
+    try {
+        return get_bounding_box_max() - get_bounding_box_min();
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("ShapeList.get_bounding_box_size failed: %s", occt_utils::exception_to_string(e)));
+        return Vector3();
+    }
 }
 
 Ref<ShapeList> ShapeList::vertices() const {
-    Ref<ShapeList> result;
-    result.instantiate();
-    for (int64_t index = 0; index < shapes.size(); ++index) {
-        const Ref<TopoShape> shape = shapes[index];
-        if (shape.is_null() || shape->is_null()) {
-            continue;
+    try {
+        Ref<ShapeList> result;
+        result.instantiate();
+        for (int64_t index = 0; index < shapes.size(); ++index) {
+            const Ref<TopoShape> shape = shapes[index];
+            if (shape.is_null() || shape->is_null()) {
+                continue;
+            }
+            const Array nested = shape->get_vertices();
+            for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
+                result->append(nested[nested_index]);
+            }
         }
-        const Array nested = shape->get_vertices();
-        for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
-            result->append(nested[nested_index]);
-        }
+        return result;
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("ShapeList.vertices failed: %s", occt_utils::exception_to_string(e)));
+        Ref<ShapeList> empty;
+        empty.instantiate();
+        return empty;
     }
-    return result;
 }
 
 Ref<ShapeList> ShapeList::edges() const {
-    Ref<ShapeList> result;
-    result.instantiate();
-    for (int64_t index = 0; index < shapes.size(); ++index) {
-        const Ref<TopoShape> shape = shapes[index];
-        if (shape.is_null() || shape->is_null()) {
-            continue;
+    try {
+        Ref<ShapeList> result;
+        result.instantiate();
+        for (int64_t index = 0; index < shapes.size(); ++index) {
+            const Ref<TopoShape> shape = shapes[index];
+            if (shape.is_null() || shape->is_null()) {
+                continue;
+            }
+            const Array nested = shape->get_edges();
+            for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
+                result->append(nested[nested_index]);
+            }
         }
-        const Array nested = shape->get_edges();
-        for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
-            result->append(nested[nested_index]);
-        }
+        return result;
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("ShapeList.edges failed: %s", occt_utils::exception_to_string(e)));
+        Ref<ShapeList> empty;
+        empty.instantiate();
+        return empty;
     }
-    return result;
 }
 
 Ref<ShapeList> ShapeList::wires() const {
-    Ref<ShapeList> result;
-    result.instantiate();
-    for (int64_t index = 0; index < shapes.size(); ++index) {
-        const Ref<TopoShape> shape = shapes[index];
-        if (shape.is_null() || shape->is_null()) {
-            continue;
+    try {
+        Ref<ShapeList> result;
+        result.instantiate();
+        for (int64_t index = 0; index < shapes.size(); ++index) {
+            const Ref<TopoShape> shape = shapes[index];
+            if (shape.is_null() || shape->is_null()) {
+                continue;
+            }
+            const Array nested = shape->get_wires();
+            for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
+                result->append(nested[nested_index]);
+            }
         }
-        const Array nested = shape->get_wires();
-        for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
-            result->append(nested[nested_index]);
-        }
+        return result;
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("ShapeList.wires failed: %s", occt_utils::exception_to_string(e)));
+        Ref<ShapeList> empty;
+        empty.instantiate();
+        return empty;
     }
-    return result;
 }
 
 Ref<ShapeList> ShapeList::faces() const {
-    Ref<ShapeList> result;
-    result.instantiate();
-    for (int64_t index = 0; index < shapes.size(); ++index) {
-        const Ref<TopoShape> shape = shapes[index];
-        if (shape.is_null() || shape->is_null()) {
-            continue;
+    try {
+        Ref<ShapeList> result;
+        result.instantiate();
+        for (int64_t index = 0; index < shapes.size(); ++index) {
+            const Ref<TopoShape> shape = shapes[index];
+            if (shape.is_null() || shape->is_null()) {
+                continue;
+            }
+            const Array nested = shape->get_faces();
+            for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
+                result->append(nested[nested_index]);
+            }
         }
-        const Array nested = shape->get_faces();
-        for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
-            result->append(nested[nested_index]);
-        }
+        return result;
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("ShapeList.faces failed: %s", occt_utils::exception_to_string(e)));
+        Ref<ShapeList> empty;
+        empty.instantiate();
+        return empty;
     }
-    return result;
 }
 
 Ref<ShapeList> ShapeList::shells() const {
-    Ref<ShapeList> result;
-    result.instantiate();
-    for (int64_t index = 0; index < shapes.size(); ++index) {
-        const Ref<TopoShape> shape = shapes[index];
-        if (shape.is_null() || shape->is_null()) {
-            continue;
+    try {
+        Ref<ShapeList> result;
+        result.instantiate();
+        for (int64_t index = 0; index < shapes.size(); ++index) {
+            const Ref<TopoShape> shape = shapes[index];
+            if (shape.is_null() || shape->is_null()) {
+                continue;
+            }
+            const Array nested = shape->get_shells();
+            for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
+                result->append(nested[nested_index]);
+            }
         }
-        const Array nested = shape->get_shells();
-        for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
-            result->append(nested[nested_index]);
-        }
+        return result;
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("ShapeList.shells failed: %s", occt_utils::exception_to_string(e)));
+        Ref<ShapeList> empty;
+        empty.instantiate();
+        return empty;
     }
-    return result;
 }
 
 Ref<ShapeList> ShapeList::compounds() const {
-    Ref<ShapeList> result;
-    result.instantiate();
-    for (int64_t index = 0; index < shapes.size(); ++index) {
-        const Ref<TopoShape> shape = shapes[index];
-        if (shape.is_null() || shape->is_null()) {
-            continue;
+    try {
+        Ref<ShapeList> result;
+        result.instantiate();
+        for (int64_t index = 0; index < shapes.size(); ++index) {
+            const Ref<TopoShape> shape = shapes[index];
+            if (shape.is_null() || shape->is_null()) {
+                continue;
+            }
+            const Array nested = shape->get_compounds();
+            for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
+                result->append(nested[nested_index]);
+            }
         }
-        const Array nested = shape->get_compounds();
-        for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
-            result->append(nested[nested_index]);
-        }
+        return result;
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("ShapeList.compounds failed: %s", occt_utils::exception_to_string(e)));
+        Ref<ShapeList> empty;
+        empty.instantiate();
+        return empty;
     }
-    return result;
 }
 
 Ref<ShapeList> ShapeList::solids() const {
-    Ref<ShapeList> result;
-    result.instantiate();
-    for (int64_t index = 0; index < shapes.size(); ++index) {
-        const Ref<TopoShape> shape = shapes[index];
-        if (shape.is_null() || shape->is_null()) {
-            continue;
+    try {
+        Ref<ShapeList> result;
+        result.instantiate();
+        for (int64_t index = 0; index < shapes.size(); ++index) {
+            const Ref<TopoShape> shape = shapes[index];
+            if (shape.is_null() || shape->is_null()) {
+                continue;
+            }
+            const Array nested = shape->get_solids();
+            for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
+                result->append(nested[nested_index]);
+            }
         }
-        const Array nested = shape->get_solids();
-        for (int64_t nested_index = 0; nested_index < nested.size(); ++nested_index) {
-            result->append(nested[nested_index]);
-        }
+        return result;
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("ShapeList.solids failed: %s", occt_utils::exception_to_string(e)));
+        Ref<ShapeList> empty;
+        empty.instantiate();
+        return empty;
     }
-    return result;
 }
 
 Ref<ShapeList> ShapeList::filter_by_position(const Ref<Axis> &p_axis, double p_minimum, double p_maximum, bool p_min_inclusive, bool p_max_inclusive) const {

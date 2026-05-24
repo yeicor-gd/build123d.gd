@@ -43,15 +43,22 @@ void CircleWire::build_circle(double p_radius, const Ref<CadPlane> &p_plane) {
             occt_utils::to_occt_dir(plane->get_normal()),
             occt_utils::to_occt_dir(plane->get_x_direction()));
         const gp_Circ circle(axis, p_radius);
+        
         BRepBuilderAPI_MakeEdge edge_builder(circle);
-        ERR_FAIL_COND_MSG(!edge_builder.IsDone(), "OpenCASCADE circle edge construction did not complete.");
+        if (!edge_builder.IsDone()) {
+            ERR_PRINT(vformat("CircleWire.build_circle: edge construction did not complete"));
+            return;
+        }
 
         BRepBuilderAPI_MakeWire wire_builder;
         wire_builder.Add(edge_builder.Edge());
         wire_builder.Build();
-        ERR_FAIL_COND_MSG(!wire_builder.IsDone(), "OpenCASCADE circle wire construction did not complete.");
+        if (!wire_builder.IsDone()) {
+            ERR_PRINT(vformat("CircleWire.build_circle: wire construction did not complete"));
+            return;
+        }
         set_occt_shape(wire_builder.Shape());
-    } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("CircleWire.build_circle failed: %s", occt_utils::exception_to_string(e)));
     }
 }

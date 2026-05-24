@@ -11,14 +11,21 @@
 
 namespace occt_utils {
 
-inline godot::String exception_to_string(const Standard_Failure &p_failure) {
-    const char *message = p_failure.GetMessageString();
-    if (message == nullptr || message[0] == '\0') {
-        return godot::String("OpenCASCADE operation failed");
+    inline godot::String exception_to_string(const Standard_Failure &p_failure) {
+        Standard_CString message = p_failure.GetMessageString();
+        Standard_CString stack_trace = p_failure.GetStackString();
+        godot::String result;
+        if (message == nullptr || message[0] == '\0') {
+            result = godot::String("OpenCASCADE operation failed");
+        } else {
+            result = godot::String(message);
+        }
+        if (stack_trace != nullptr && stack_trace[0] != '\0') {
+            result += "\nStack trace:\n";
+            result += godot::String(stack_trace);
+        }
+        return result;
     }
-
-    return godot::String(message);
-}
 
 inline godot::Vector3 to_godot_vector3(const gp_Vec &p_vec) {
     return godot::Vector3(

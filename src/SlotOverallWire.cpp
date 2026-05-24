@@ -30,7 +30,10 @@ Vector3 plane_point(const Ref<CadPlane> &p_plane, double p_u, double p_v) {
 
 TopoDS_Edge make_line_edge(const Vector3 &p_start, const Vector3 &p_end) {
     BRepBuilderAPI_MakeEdge builder(occt_utils::to_occt_point(p_start), occt_utils::to_occt_point(p_end));
-    ERR_FAIL_COND_V_MSG(!builder.IsDone(), TopoDS_Edge(), "OpenCASCADE slot line-edge construction did not complete.");
+    if (!builder.IsDone()) {
+        ERR_PRINT("make_line_edge: operation did not complete");
+        return TopoDS_Edge();
+    }
     return builder.Edge();
 }
 
@@ -39,10 +42,16 @@ TopoDS_Edge make_arc_edge(const Vector3 &p_start, const Vector3 &p_mid, const Ve
         occt_utils::to_occt_point(p_start),
         occt_utils::to_occt_point(p_mid),
         occt_utils::to_occt_point(p_end));
-    ERR_FAIL_COND_V_MSG(!builder.IsDone(), TopoDS_Edge(), "OpenCASCADE slot arc construction did not complete.");
+    if (!builder.IsDone()) {
+        ERR_PRINT("make_arc_edge: arc construction did not complete");
+        return TopoDS_Edge();
+    }
 
     BRepBuilderAPI_MakeEdge edge_builder(builder.Value());
-    ERR_FAIL_COND_V_MSG(!edge_builder.IsDone(), TopoDS_Edge(), "OpenCASCADE slot arc-edge construction did not complete.");
+    if (!edge_builder.IsDone()) {
+        ERR_PRINT("make_arc_edge: edge construction did not complete");
+        return TopoDS_Edge();
+    }
     return edge_builder.Edge();
 }
 
@@ -55,9 +64,9 @@ void SlotOverallWire::_bind_methods() {
 SlotOverallWire::SlotOverallWire() = default;
 
 void SlotOverallWire::build_slot_overall(double p_width, double p_height, const Ref<CadPlane> &p_plane, bool p_centered) {
-    ERR_FAIL_COND_MSG(p_width <= 0.0, "SlotOverallWire.build_slot_overall requires a positive width.");
-    ERR_FAIL_COND_MSG(p_height <= 0.0, "SlotOverallWire.build_slot_overall requires a positive height.");
-    ERR_FAIL_COND_MSG(p_width < p_height, "SlotOverallWire.build_slot_overall requires width >= height.");
+    ERR_FAIL_COND_MSG(p_width <= 0.0, vformat("SlotOverallWire.build_slot_overall: requires positive width, got %f", p_width));
+    ERR_FAIL_COND_MSG(p_height <= 0.0, vformat("SlotOverallWire.build_slot_overall: requires positive height, got %f", p_height));
+    ERR_FAIL_COND_MSG(p_width < p_height, vformat("SlotOverallWire.build_slot_overall: requires width >= height, got width=%f height=%f", p_width, p_height));
 
     Ref<CadPlane> plane = p_plane;
     if (plane.is_null()) {
@@ -81,10 +90,13 @@ void SlotOverallWire::build_slot_overall(double p_width, double p_height, const 
             wire_builder.Add(make_arc_edge(left, top, right));
             wire_builder.Add(make_arc_edge(right, bottom, left));
             wire_builder.Build();
-            ERR_FAIL_COND_MSG(!wire_builder.IsDone(), "OpenCASCADE circular slot wire construction did not complete.");
+            if (!wire_builder.IsDone()) {
+                ERR_PRINT("SlotOverallWire.build_slot_overall: circular slot wire construction did not complete");
+                return;
+            }
             set_occt_shape(wire_builder.Wire());
         } catch (const Standard_Failure &failure) {
-            ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+            ERR_PRINT(vformat("SlotOverallWire.build_slot_overall failed: %s", occt_utils::exception_to_string(failure)));
         }
         return;
     }
@@ -112,9 +124,12 @@ void SlotOverallWire::build_slot_overall(double p_width, double p_height, const 
         wire_builder.Add(make_line_edge(right_top, left_top));
         wire_builder.Add(make_arc_edge(left_top, far_left, left_bottom));
         wire_builder.Build();
-        ERR_FAIL_COND_MSG(!wire_builder.IsDone(), "OpenCASCADE slot wire construction did not complete.");
+        if (!wire_builder.IsDone()) {
+            ERR_PRINT("SlotOverallWire.build_slot_overall: slot wire construction did not complete");
+            return;
+        }
         set_occt_shape(wire_builder.Wire());
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("SlotOverallWire.build_slot_overall failed: %s", occt_utils::exception_to_string(failure)));
     }
 }

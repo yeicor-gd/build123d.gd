@@ -25,7 +25,10 @@ Ref<Compound> Compound::from_occt(const TopoDS_Compound &p_compound) {
 }
 
 void Compound::build_compound(const Array &p_shapes) {
-    ERR_FAIL_COND_MSG(p_shapes.is_empty(), "Compound.build_compound requires at least one child shape.");
+    if (p_shapes.is_empty()) {
+        ERR_PRINT(vformat("Compound.build_compound failed: requires at least one child shape."));
+        return;
+    }
 
     try {
         BRep_Builder builder;
@@ -34,18 +37,24 @@ void Compound::build_compound(const Array &p_shapes) {
 
         for (int64_t index = 0; index < p_shapes.size(); ++index) {
             Ref<TopoShape> child = p_shapes[index];
-            ERR_FAIL_COND_MSG(child.is_null() || child->is_null(), "Compound.build_compound requires all child shapes to be non-null TopoShape instances.");
+            if (child.is_null() || child->is_null()) {
+                ERR_PRINT(vformat("Compound.build_compound failed: all child shapes must be non-null TopoShape instances."));
+                return;
+            }
             builder.Add(compound, child->get_occt_shape());
         }
 
         set_occt_shape(compound);
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Compound.build_compound failed: %s", occt_utils::exception_to_string(failure)));
     }
 }
 
 int Compound::get_child_count() const {
-    ERR_FAIL_COND_V_MSG(is_null(), 0, "Compound.get_child_count requires a non-null shape.");
+    if (is_null()) {
+        ERR_PRINT(vformat("Compound.get_child_count failed: requires a non-null shape."));
+        return 0;
+    }
 
     try {
         int count = 0;
@@ -54,6 +63,7 @@ int Compound::get_child_count() const {
         }
         return count;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(0, occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Compound.get_child_count failed: %s", occt_utils::exception_to_string(failure)));
+        return 0;
     }
 }

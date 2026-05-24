@@ -3,11 +3,6 @@
 
 #include "register_types.h"
 
-#include <godot_cpp/godot.hpp>
-#include <godot_cpp/core/defs.hpp>
-
-#include "gdextension_interface.h"
-
 // Include headers for all detected classes
 #include "Axis.h"
 #include "CircleWire.h"

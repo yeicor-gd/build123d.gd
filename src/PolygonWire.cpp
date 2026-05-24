@@ -1,6 +1,7 @@
 #include "PolygonWire.h"
 
 #include "Plane.h"
+#include "OCCTUtils.h"
 
 #include <godot_cpp/core/error_macros.hpp>
 
@@ -37,11 +38,15 @@ void PolygonWire::build_polygon_2d(const PackedVector2Array &p_points, const Ref
         plane = default_xy_plane();
     }
 
-    PackedVector3Array points_3d;
-    points_3d.resize(p_points.size());
-    for (int64_t index = 0; index < p_points.size(); ++index) {
-        points_3d.set(index, plane_point(plane, p_points[index]));
-    }
+    try {
+        PackedVector3Array points_3d;
+        points_3d.resize(p_points.size());
+        for (int64_t index = 0; index < p_points.size(); ++index) {
+            points_3d.set(index, plane_point(plane, p_points[index]));
+        }
 
-    build_polygon(points_3d, p_closed);
+        build_polygon(points_3d, p_closed);
+    } catch (const Standard_Failure &e) {
+        ERR_PRINT(vformat("PolygonWire.build_polygon_2d failed: %s", occt_utils::exception_to_string(e)));
+    }
 }

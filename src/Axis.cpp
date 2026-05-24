@@ -24,7 +24,7 @@ void Axis::set_axis(const Vector3 &p_origin, const Vector3 &p_direction) {
     try {
         occt_axis = gp_Ax1(occt_utils::to_occt_point(p_origin), occt_utils::to_occt_dir(p_direction));
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_MSG(occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Axis.set_axis failed: %s", occt_utils::exception_to_string(failure)));
     }
 }
 
@@ -52,7 +52,8 @@ Ref<Axis> Axis::transformed(const Ref<Location> &p_location) const {
         result->set_occt_axis(occt_axis.Transformed(p_location->get_occt_transform()));
         return result;
     } catch (const Standard_Failure &failure) {
-        ERR_FAIL_V_MSG(Ref<Axis>(), occt_utils::exception_to_string(failure));
+        ERR_PRINT(vformat("Axis.transformed failed: %s", occt_utils::exception_to_string(failure)));
+        return Ref<Axis>();
     }
 }
 
