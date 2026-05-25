@@ -73,7 +73,7 @@ func _ready() -> void:
 	else:
 		log_success("PASSED: %d tests total" % total_passed)
 
-	quit_tests(1 if total_failed > 0 else 0)
+	await quit_tests(1 if total_failed > 0 else 0)
 
 
 func _run_suite(file: String) -> void:

@@ -10,7 +10,12 @@ static func _approx_vec(a: Vector3, b: Vector3, epsilon := 0.001) -> bool:
 
 
 static func _temp_path(extension: String) -> String:
-	return "/tmp/build123d_gd_%d%s" % [Time.get_ticks_usec(), extension]
+	var temp_dir := OS.get_environment("TEMP")
+	if temp_dir.is_empty():
+		temp_dir = OS.get_environment("TMP")
+	if temp_dir.is_empty():
+		temp_dir = "/tmp"
+	return "%s/build123d_gd_%d%s" % [temp_dir, Time.get_ticks_usec(), extension]
 
 
 static func _box() -> SolidBox:
