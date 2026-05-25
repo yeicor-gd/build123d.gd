@@ -136,19 +136,23 @@ else
 fi
 
 cd "$SCRIPT_DIR"
-MY_LD_PRELOAD=""
-if [ "$GODOT_VERSION" != "system" ]; then
-    MY_LD_PRELOAD="LD_PRELOAD=$(gcc -print-file-name=libasan.so)"
-fi
 
 IMPORT_LOG=$(mktemp)
 trap "rm -f '$IMPORT_LOG'" EXIT
 RUNTIME_LOG=$(mktemp)
 trap "rm -f '$RUNTIME_LOG'" EXIT
 
+# Set up environment variables for running Godot
+if [ "$GODOT_VERSION" != "system" ]; then
+    export LD_PRELOAD="$(gcc -print-file-name=libasan.so)"
+    export LSAN_OPTIONS=detect_leaks=0
+fi
+
 # https://github.com/godotengine/godot/issues/111048: Import needs frame delay to avoid crash due to race condition
-eval "$MY_LD_PRELOAD LSAN_OPTIONS=detect_leaks=0 $GODOT_BIN --frame-delay 5000 --import --path \"$SCRIPT_DIR/demo\" --headless --quit 2>&1 | tee -a \"$IMPORT_LOG\"; EXIT_CODE=\${PIPESTATUS[0]}; if [ \$EXIT_CODE -ne 0 ]; then exit \$EXIT_CODE; fi"
-eval "$MY_LD_PRELOAD $GODOT_BIN --path \"$SCRIPT_DIR/demo\" --headless 2>&1 | tee -a \"$RUNTIME_LOG\"; EXIT_CODE=\${PIPESTATUS[0]}; if [ \$EXIT_CODE -ne 0 ]; then exit \$EXIT_CODE; fi"
+"$GODOT_BIN" --frame-delay 1000 --import --path "$SCRIPT_DIR/demo" --headless --quit 2>&1 | tee -a "$IMPORT_LOG"
+"$GODOT_BIN" --path "$SCRIPT_DIR/demo" --headless 2>&1 | tee -a "$RUNTIME_LOG"
+
+unset LD_PRELOAD LSAN_OPTIONS
 
 _extract_errors() {
     echo "$1" | \
