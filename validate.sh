@@ -148,16 +148,26 @@ if [ "$GODOT_VERSION" != "system" ]; then
     export LSAN_OPTIONS=detect_leaks=0
 fi
 
+export GODOT_TEST_RUNNER=true
 # https://github.com/godotengine/godot/issues/111048: Import needs frame delay to avoid crash due to race condition
 "$GODOT_BIN" --frame-delay 1000 --import --path "$SCRIPT_DIR/demo" --headless --quit 2>&1 | tee -a "$IMPORT_LOG"
+IMPORT_EXIT=${PIPESTATUS[0]}
+if [ $IMPORT_EXIT -ne 0 ]; then
+    IMPORT_LOG "✗ Import failed - exit code $IMPORT_EXIT" >> "$IMPORT_LOG"
+fi
 "$GODOT_BIN" --path "$SCRIPT_DIR/demo" --headless 2>&1 | tee -a "$RUNTIME_LOG"
+RUNTIME_EXIT=${PIPESTATUS[0]}
+if [ $RUNTIME_EXIT -ne 0 ]; then
+    echo "✗ Runtime execution failed - exit code $RUNTIME_EXIT" >> "$RUNTIME_LOG"
+    cat $RUNTIME_LOG
+fi
 
 unset LD_PRELOAD LSAN_OPTIONS
 
 _extract_errors() {
     echo "$1" | \
     grep -E -v "(ObjectDB|RID).*leaked|resources still in use at exit" | \
-    grep -E "^ERROR:|^SCRIPT ERROR:|^WARNING:|^handle_crash:|Shader compilation error|Script compilation error|Parse error|undefined method|undefined symbol|not found|No such|^TESTS FAILED|^handle_crash:" || return 0
+    grep -E "failed|^ERROR:|^SCRIPT ERROR:|^WARNING:|^handle_crash:|Shader compilation error|Script compilation error|Parse error|undefined method|undefined symbol|not found|No such|^TESTS FAILED|^handle_crash:" || return 0
 }
 
 ERRORS=$(_extract_errors "$IMPORT_LOG"$'\n'"$RUNTIME_LOG")
