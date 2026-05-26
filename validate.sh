@@ -149,13 +149,14 @@ if [ "$GODOT_VERSION" != "system" ]; then
 fi
 
 export GODOT_TEST_RUNNER=true
+export GODOT_TEST_RUNNER_TIMEOUT=60000 # 1 minute
 # https://github.com/godotengine/godot/issues/111048: Import needs frame delay to avoid crash due to race condition
 "$GODOT_BIN" --frame-delay 1000 --import --path "$SCRIPT_DIR/demo" --headless --quit 2>&1 | tee -a "$IMPORT_LOG"
 IMPORT_EXIT=${PIPESTATUS[0]}
 if [ $IMPORT_EXIT -ne 0 ]; then
     IMPORT_LOG "✗ Import failed - exit code $IMPORT_EXIT" >> "$IMPORT_LOG"
 fi
-"$GODOT_BIN" --path "$SCRIPT_DIR/demo" --headless 2>&1 | tee -a "$RUNTIME_LOG"
+timeout --preserve-status $((GODOT_TEST_RUNNER_TIMEOUT * 2 / 1000)) "$GODOT_BIN" --path "$SCRIPT_DIR/demo" --headless 2>&1 | tee -a "$RUNTIME_LOG"
 RUNTIME_EXIT=${PIPESTATUS[0]}
 if [ $RUNTIME_EXIT -ne 0 ]; then
     echo "✗ Runtime execution failed - exit code $RUNTIME_EXIT" >> "$RUNTIME_LOG"
