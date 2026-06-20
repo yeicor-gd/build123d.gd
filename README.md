@@ -8,7 +8,7 @@ It focuses on being a low-level yet complete wrapper, designed as a solid founda
 
 ## ✨ Features
 
-- **Cross-Platform Support**: Runs on desktop (Windows, macOS, Linux) platforms.
+- **Cross-Platform Support**: Runs on desktop (Windows, macOS, Linux), mobile (Android, iOS), and web (threads, no threads) platforms.
 - **Demo Project**: includes [demo scene](demo/) to get you started quickly.
 - **Comprehensive Documentation**: includes [class references](doc_classes/) for seamless Godot editor integration.
 - **High Performance**: leverages C++ for optimized performance and low-level access.
