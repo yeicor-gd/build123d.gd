@@ -1,6 +1,8 @@
-# OpenCASCADE.gd
+# build123d.gd
 
-This project provides OpenCASCADE Technology (OCCT) integration for the Godot Engine using GDExtension.
+This project provides a port[^1] of [build123d](https://github.com/gumyr/build123d) for the Godot Engine using GDExtension.
+
+[^1]: Inspired by the original build123d project, but the API is not a direct port. The goal is to provide a similar experience while leveraging Godot's architecture and GDExtension capabilities.
 
 It focuses on being a low-level yet complete wrapper, designed as a solid foundation for building higher-level CAD/CAM/CAE functionality while still accounting for rare edge cases.
 
