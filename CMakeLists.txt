@@ -92,9 +92,12 @@ file(GLOB_RECURSE SOURCES "src/*.cpp" "src/**/*.cpp")
 if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   add_library(${PROJECT_NAME} MODULE ${SOURCES} ${DOC_GEN_FILE})
   target_link_options(${PROJECT_NAME} PRIVATE "-sSIDE_MODULE=1")
-  target_link_libraries(${PROJECT_NAME} PRIVATE "-Wl,--allow-multiple-definition") # Emscripten's linker is more strict about multiple definitions, but OpenCASCADE has some circular dependencies that cause this. This flag allows it to link successfully.
 else()
   add_library(${PROJECT_NAME} SHARED ${SOURCES} ${DOC_GEN_FILE})
+endif()
+if(CMAKE_SYSTEM_NAME STREQUAL "Emscripten" OR MINGW)
+  # Avoid failing on duplicate definitions for Emscripten and mingw compilers
+  target_link_libraries(${PROJECT_NAME} PRIVATE "-Wl,--allow-multiple-definition")
 endif()
 target_link_libraries(${PROJECT_NAME} PRIVATE godot-cpp ${OpenCASCADE_LIBRARIES})
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE godot-cpp/include ${OpenCASCADE_INCLUDE_DIR})
