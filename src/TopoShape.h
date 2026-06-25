@@ -67,6 +67,7 @@ public:
     godot::Array get_shells() const;
     godot::Array get_compounds() const;
     godot::Array get_solids() const;
+    godot::Array decompose_compound() const;
     godot::PackedVector3Array get_vertex_positions() const;
     godot::Array get_edge_polylines(double p_deflection = 0.1) const;
     bool import_step_file(const godot::String &p_file_path);

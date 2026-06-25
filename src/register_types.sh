@@ -137,6 +137,32 @@ EOF
         sed 's/$/"/'
 
     cat << 'EOF'
+// OCCT fix: Godot corrupts std::cout's vtable during startup and shutdown.
+// Null the private myStream pointer so Message_PrinterOStream::Close() is safe.
+#include <Message.hxx>
+#include <Message_Messenger.hxx>
+#include <Message_PrinterOStream.hxx>
+
+static void clear_messenger_printers() {
+    Handle(Message_Messenger) const messenger = Message::DefaultMessenger();
+    if (messenger.IsNull()) {
+        return;
+    }
+
+    const Message_SequenceOfPrinters& printers = messenger->Printers();
+    for (int i = 1; i <= printers.Size(); i++) {
+        Handle(Message_PrinterOStream) const osp =
+            Handle(Message_PrinterOStream)::DownCast(printers.Value(i));
+        if (!osp.IsNull()) {
+            // Nulify the private myStream field so Close() returns immediately.
+            // Layout: vtable(8) + refcount(4) + myTraceLevel(4) + myStream(8) ...
+            *reinterpret_cast<void**>(reinterpret_cast<char*>(osp.get()) + 16) = nullptr;
+        }
+    }
+
+    messenger->ChangePrinters().Clear();
+}
+
 void gdext_initialize_module(godot::ModuleInitializationLevel p_level) {
     if (p_level != godot::MODULE_INITIALIZATION_LEVEL_SCENE) {
         return;
@@ -153,11 +179,14 @@ EOF
     done < "$CLASSES_FILE"
 
     cat << 'EOF'
+    clear_messenger_printers();
 }
 
 void gdext_uninitialize_module(godot::ModuleInitializationLevel p_level) {
-    (void)p_level;
-    // Teardown logic (if any) goes here.
+    if (p_level != godot::MODULE_INITIALIZATION_LEVEL_SCENE) {
+        return;
+    }
+    clear_messenger_printers();
 }
 
 extern "C" {

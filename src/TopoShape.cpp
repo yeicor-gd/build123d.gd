@@ -28,6 +28,8 @@
 #include <BRepAdaptor_Surface.hxx>
 #include <BRepBuilderAPI_Transform.hxx>
 #include <Message.hxx>
+#include <Message_Printer.hxx>
+#include <NCollection_Sequence.hxx>
 #include <BRepBndLib.hxx>
 #include <BRepBuilderAPI_Copy.hxx>
 #include <BRepGProp.hxx>
@@ -45,6 +47,7 @@
 #include <TopAbs_Orientation.hxx>
 #include <TopAbs_ShapeEnum.hxx>
 #include <TopExp.hxx>
+#include <TopoDS_Iterator.hxx>
 #include <TopExp_Explorer.hxx>
 #include <TopLoc_Location.hxx>
 #include <TopTools_IndexedMapOfShape.hxx>
@@ -174,7 +177,7 @@ bool is_status_done(const IFSelect_ReturnStatus p_status) {
 class ScopedOcctMessengerSilence {
 private:
     Handle(Message_Messenger) messenger;
-    Message_SequenceOfPrinters printers;
+    NCollection_Sequence<Handle(Message_Printer)> printers;
 
 public:
     ScopedOcctMessengerSilence() :
@@ -184,7 +187,11 @@ public:
     }
 
     ~ScopedOcctMessengerSilence() {
-        messenger->ChangePrinters() = printers;
+        // Intentionally do NOT restore printers.  The default messenger's cout
+        // printers are permanently removed at extension init; restoring them
+        // would cause a segfault later when Godot corrupts cout's vtable
+        // during shutdown.  Silence is permanent.
+        (void)printers;
     }
 };
 
@@ -243,6 +250,7 @@ void TopoShape::_bind_methods() {
     ClassDB::bind_method(D_METHOD("get_shells"), &TopoShape::get_shells);
     ClassDB::bind_method(D_METHOD("get_compounds"), &TopoShape::get_compounds);
     ClassDB::bind_method(D_METHOD("get_solids"), &TopoShape::get_solids);
+    ClassDB::bind_method(D_METHOD("decompose_compound"), &TopoShape::decompose_compound);
     ClassDB::bind_method(D_METHOD("get_vertex_positions"), &TopoShape::get_vertex_positions);
     ClassDB::bind_method(D_METHOD("get_edge_polylines", "deflection"), &TopoShape::get_edge_polylines, DEFVAL(0.1));
     ClassDB::bind_method(D_METHOD("import_step_file", "file_path"), &TopoShape::import_step_file);
@@ -734,6 +742,27 @@ Array TopoShape::get_compounds() const {
         ERR_PRINT(vformat("TopoShape.get_compounds failed: %s", occt_utils::exception_to_string(failure)));
         return Array();
     }
+}
+
+Array TopoShape::decompose_compound() const {
+    Array children;
+
+    try {
+        if (occt_shape.IsNull() || occt_shape.ShapeType() != TopAbs_COMPOUND) {
+            return children;
+        }
+
+        for (TopoDS_Iterator it(occt_shape); it.More(); it.Next()) {
+            const TopoDS_Shape &child = it.Value();
+            if (!child.IsNull()) {
+                children.push_back(TopoShape::from_occt(child));
+            }
+        }
+    } catch (const Standard_Failure &failure) {
+        ERR_PRINT(vformat("TopoShape.decompose_compound failed: %s", occt_utils::exception_to_string(failure)));
+    }
+
+    return children;
 }
 
 Array TopoShape::get_solids() const {
