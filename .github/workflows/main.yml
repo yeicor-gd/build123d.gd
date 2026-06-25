@@ -584,31 +584,21 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v4
 
-  # Certain jobs may fail due to rate limits or compiler bugs; automatically retry failed jobs up to 3 times with some delay
-  retry-on-failure:
-    needs:
-      - read-versions
-      - prepare-api
-      - build
-      - test
-      - release
-      - deploy-pages
-    if: "!cancelled() && contains(needs.*.result, 'failure') && fromJSON(github.run_attempt) < 5"
+  success: # For auto-merging rules
+    needs: test
+    if: "!cancelled()"
     runs-on: ubuntu-24.04
     permissions:
       actions: write
     steps:
-      - env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
+      - name: Check dependency status
+        if: needs.test.result != 'success'
         run: |
           set -ex
           sleep $((RANDOM % 120 + 10))
           gh workflow run retry-workflow.yml -F run_id=${{ github.run_id }}
-
-  success: # No-op success job for github ruleset detection
-    runs-on: ubuntu-24.04
-    needs: test
-    steps:
-      - name: CI success marker
-        run: echo "CI completed successfully (no-op success job for github ruleset detection)"
+          echo "Required tests did not succeed (status: ${{ needs.test.result }})"
+          exit 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
