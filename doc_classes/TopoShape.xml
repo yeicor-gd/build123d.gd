@@ -203,6 +203,12 @@
 				Returns unique topological solids as [Solid] wrappers.
 			</description>
 		</method>
+		<method name="decompose_compound" qualifiers="const">
+			<return type="Array" />
+			<description>
+				Decomposes a COMPOUND shape into an array of its direct child [TopoShape]s. If the shape is not a COMPOUND, returns an empty array. Useful for extracting individual parts from a STEP assembly imported via [method import_step_file].
+			</description>
+		</method>
 		<method name="get_vertex_positions" qualifiers="const">
 			<return type="PackedVector3Array" />
 			<description>
