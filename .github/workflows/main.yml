@@ -582,7 +582,7 @@ jobs:
           path: web
 
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
 
   success: # For auto-merging rules
     needs: test
